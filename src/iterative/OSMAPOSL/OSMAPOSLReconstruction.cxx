@@ -433,7 +433,7 @@ update_estimate(TargetT &current_image_estimate)
   this->check(current_image_estimate);
   // TODO should use something like iterator_traits to figure out the 
   // type instead of hard-wiring float
-  static const float small_num = 0.000001F;
+  static const float small_num = 0.0000000000000001F;
   
 #ifndef PARALLEL
   //CPUTimer subset_timer;
