@@ -3,7 +3,15 @@
     Copyright (C) 2014, 2016, 2018, University College London
     This file is part of STIR.
 
-    SPDX-License-Identifier: Apache-2.0
+    This file is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
+    (at your option) any later version.
+
+    This file is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
     See STIR/LICENSE.txt for details
 */
 /*!
@@ -43,7 +51,6 @@
 #include "stir/recon_buildblock/BackProjectorByBinUsingProjMatrixByBin.h"
 #include "stir/recon_buildblock/ProjMatrixByBinUsingRayTracing.h"
 #include "stir/recon_buildblock/ProjectorByBinPairUsingSeparateProjectors.h"
-#include "stir/recon_buildblock/BinNormalisationWithCalibration.h"
 
 #ifdef STIR_MPI
 #include "stir/recon_buildblock/distributed_functions.h"
@@ -202,7 +209,7 @@ set_up_before_sensitivity(shared_ptr <const TargetT > const& target_sptr)
     }
 
     if (this->normalisation_sptr->set_up(
-                this->list_mode_data_sptr->get_exam_info_sptr(), proj_data_info_sptr->create_shared_clone()) == Succeeded::no)
+                proj_data_info_sptr->create_shared_clone()) == Succeeded::no)
         return Succeeded::no;
 
     if (this->current_frame_num<=0)
@@ -317,7 +324,7 @@ PoissonLogLikelihoodWithLinearModelForMeanAndListModeDataWithProjMatrixByBin<Tar
           }
       }
 
-  if( this->normalisation_sptr->set_up(this->list_mode_data_sptr->get_exam_info_sptr(), proj_data_info_sptr)
+  if( this->normalisation_sptr->set_up(proj_data_info_sptr)
    == Succeeded::no)
   {
 warning("PoissonLogLikelihoodWithLinearModelForMeanAndListModeDataWithProjMatrixByBin: "
@@ -375,7 +382,7 @@ add_view_seg_to_sensitivity(const ViewSegmentNumbers& view_seg_nums) const
   {
     const double start_frame = this->frame_defs.get_start_time(this->current_frame_num);
     const double end_frame = this->frame_defs.get_end_time(this->current_frame_num);
-    this->normalisation_sptr->undo(viewgrams);
+    this->normalisation_sptr->undo(viewgrams,start_frame,end_frame);
   }
   // backproject
   {
@@ -390,26 +397,6 @@ add_view_seg_to_sensitivity(const ViewSegmentNumbers& view_seg_nums) const
   }
 
 }
-
-template<typename TargetT>
- std::unique_ptr<ExamInfo>
- PoissonLogLikelihoodWithLinearModelForMeanAndListModeDataWithProjMatrixByBin<TargetT>::
- get_exam_info_uptr_for_target()  const
-{
-     auto exam_info_uptr = this->get_exam_info_uptr_for_target();
-     if (auto norm_ptr = dynamic_cast<BinNormalisationWithCalibration const * const>(get_normalisation_sptr().get()))
-     {
-       exam_info_uptr->set_calibration_factor(norm_ptr->get_calibration_factor());
-       // somehow tell the image that it's calibrated (do we have a way?)
-     }
-     else
-     {
-       exam_info_uptr->set_calibration_factor(1.F);
-       // somehow tell the image that it's not calibrated (do we have a way?)
-     }
-    return exam_info_uptr;
-}
-
 
 template <typename TargetT> 
 TargetT * 

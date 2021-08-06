@@ -1,11 +1,19 @@
 /*
     Copyright (C) 2000 PARAPET partners
     Copyright (C) 2000- 2012-01-09, Hammersmith Imanet Ltd
-    Copyright (C) 2013, 2020 University College London
+    Copyright (C) 2013 University College London
 
     This file is part of STIR.
 
-    SPDX-License-Identifier: Apache-2.0 AND License-ref-PARAPET-license
+    This file is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
+    (at your option) any later version.
+
+    This file is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
     See STIR/LICENSE.txt for details
 */
@@ -35,7 +43,6 @@
 #include <algorithm>
 #include "stir/IO/interfile.h"
 #include "stir/info.h"
-#include <boost/format.hpp>
 
 #ifdef STIR_OPENMP
 #include <omp.h>
@@ -108,33 +115,39 @@ ask_parameters()
 
 bool FBP2DReconstruction::post_processing()
 {
-  return base_type::post_processing();
+  if (base_type::post_processing())
+    return true;
+  return post_processing_only_FBP2D_parameters();
 }
 
-Succeeded
-FBP2DReconstruction::
-set_up(shared_ptr <FBP2DReconstruction::TargetT > const& target_data_sptr)
+bool FBP2DReconstruction::post_processing_only_FBP2D_parameters()
 {
-  if (base_type::set_up(target_data_sptr) == Succeeded::no)
-    return Succeeded::no;
-
   if (fc_ramp<=0 || fc_ramp>.5000000001)
-    error(boost::format("Cut-off frequency has to be between 0 and .5 but is %g") % fc_ramp);
-
+    {
+      warning("Cut-off frequency has to be between 0 and .5 but is %g\n", fc_ramp);
+      return true;
+    }
   if (alpha_ramp<=0 || alpha_ramp>1.000000001)
-    error(boost::format("Alpha parameter for ramp has to be between 0 and 1 but is %g") % alpha_ramp);
-
+    {
+      warning("Alpha parameter for ramp has to be between 0 and 1 but is %g\n", alpha_ramp);
+      return true;
+    }
   if (pad_in_s<0 || pad_in_s>2)
-    error(boost::format("padding factor has to be between 0 and 2 but is %d") % pad_in_s);
-
+    {
+      warning("padding factor has to be between 0 and 2 but is %d\n", pad_in_s);
+      return true;
+    }
   if (pad_in_s<1)
-    warning("Transaxial extension for FFT:=0 should ONLY be used when the non-zero data\n"
-            "occupy only half of the FOV. Otherwise aliasing will occur!");
+      warning("Transaxial extension for FFT:=0 should ONLY be used when the non-zero data\n"
+	      "occupy only half of the FOV. Otherwise aliasing will occur!");
 
   if (num_segments_to_combine>=0 && num_segments_to_combine%2==0)
-    error(boost::format("num_segments_to_combine has to be odd (or -1), but is %d") % num_segments_to_combine);
+    {
+      warning("num_segments_to_combine has to be odd (or -1), but is %d\n", num_segments_to_combine);
+      return true;
+    }
 
-  if (num_segments_to_combine==-1)
+    if (num_segments_to_combine==-1)
     {
       const shared_ptr<const ProjDataInfoCylindrical> proj_data_info_cyl_sptr =
 	dynamic_pointer_cast<const ProjDataInfoCylindrical>(proj_data_ptr->get_proj_data_info_sptr());
@@ -153,10 +166,13 @@ set_up(shared_ptr <FBP2DReconstruction::TargetT > const& target_data_sptr)
 	}
     }
 
-  if (is_null_ptr(back_projector_sptr))
-    error("Back projector not set.");
+    if (is_null_ptr(back_projector_sptr))
+      {
+	warning("Back projector not set.\n");
+	return true;
+      }
 
-  return Succeeded::yes;
+  return false;
 }
 
 std::string FBP2DReconstruction::method_info() const
@@ -191,6 +207,9 @@ FBP2DReconstruction(const shared_ptr<ProjData>& proj_data_ptr_v,
   pad_in_s = pad_in_s_v;
   num_segments_to_combine = num_segments_to_combine_v;
   proj_data_ptr = proj_data_ptr_v;
+  // have to check here because we're not parsing
+  if (post_processing_only_FBP2D_parameters() == true)
+    error("FBP2D: Wrong parameter values. Aborting\n");
 }
 
 Succeeded 

@@ -4,7 +4,6 @@
 
 /*
     Copyright (C) 2000- 2011, IRSL
-    SPDX-License-Identifier: Apache-2.0
     See STIR/LICENSE.txt for details
 */
 START_NAMESPACE_STIR

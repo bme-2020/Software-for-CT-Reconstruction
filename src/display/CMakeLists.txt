@@ -5,7 +5,7 @@ set(dir display)
 
 set (dir_LIB_SOURCES ${dir}_LIB_SOURCES)
 set(${dir}_LIB_SOURCES 
-	  display_array.cxx
+	  display_array
 )
 
 find_package(X11)
@@ -23,7 +23,7 @@ set(GRAPHICS ${default_GRAPHICS}
 if( "${GRAPHICS}" STREQUAL "X")
 	set(${dir}_LIB_SOURCES 
 	  ${${dir}_LIB_SOURCES}
-	  gen.c screengen.c screen.c
+	  gen screengen screen
 	)
 	ADD_DEFINITIONS(-DSTIR_SIMPLE_BITMAPS -DSC_XWINDOWS)
 

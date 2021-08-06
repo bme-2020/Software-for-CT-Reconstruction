@@ -4,7 +4,15 @@
     Copyright (C) 2002-2007, Hammersmith Imanet Ltd
     This file is part of STIR.
 
-    SPDX-License-Identifier: Apache-2.0
+    This file is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
+    (at your option) any later version.
+
+    This file is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
     See STIR/LICENSE.txt for details
 */
@@ -26,7 +34,6 @@
 // include for namespace macros
 #include "stir/IO/stir_ecat_common.h"
 #include <string>
-#include "stir/deprecated.h"
 
 START_NAMESPACE_STIR
 template <int num_dimensions, typename elemT> class DiscretisedDensity;
@@ -42,10 +49,8 @@ START_NAMESPACE_ECAT6
 
   \warning Currently output always uses 2-byte signed integers in
   little-endian byte order.
-
-  \deprecated
  */
-class STIR_DEPRECATED ECAT6OutputFileFormat : 
+class ECAT6OutputFileFormat : 
   public RegisteredParsingObject<
         ECAT6OutputFileFormat,
         OutputFileFormat<DiscretisedDensity<3,float> >,

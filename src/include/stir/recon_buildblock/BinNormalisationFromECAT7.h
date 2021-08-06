@@ -4,7 +4,15 @@
     Copyright (C) 2000- 2007, Hammersmith Imanet Ltd
     This file is part of STIR.
 
-    SPDX-License-Identifier: Apache-2.0
+    This file is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
+    (at your option) any later version.
+
+    This file is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
     See STIR/LICENSE.txt for details
 */
@@ -21,7 +29,6 @@
 #define __stir_recon_buildblock_BinNormalisationFromECAT7_H__
 
 #include "stir/recon_buildblock/BinNormalisation.h"
-#include "stir/recon_buildblock/BinNormalisationWithCalibration.h"
 #include "stir/RegisteredParsingObject.h"
 #include "stir/ProjData.h"
 #include "stir/shared_ptr.h"
@@ -68,12 +75,9 @@ START_NAMESPACE_ECAT7
   End Bin Normalisation From ECAT7:=
   \endverbatim
  
-  \par Warning
-  dead-time code might currently give wrong results due to uncertainty in units for singles rates
-
 */
 class BinNormalisationFromECAT7 :
-   public RegisteredParsingObject<BinNormalisationFromECAT7, BinNormalisation, BinNormalisationWithCalibration>
+   public RegisteredParsingObject<BinNormalisationFromECAT7, BinNormalisation>
 {
 public:
   //! Name which will be used when parsing a BinNormalisation object
@@ -90,8 +94,8 @@ public:
   //! Constructor that reads the projdata from a file
   BinNormalisationFromECAT7(const std::string& filename);
 
-  virtual Succeeded set_up(const shared_ptr<const ExamInfo> &exam_info_sptr,const shared_ptr<const ProjDataInfo>&) override;
-  float get_uncalibrated_bin_efficiency(const Bin& bin) const override;
+  virtual Succeeded set_up(const shared_ptr<const ProjDataInfo>&);
+  float get_bin_efficiency(const Bin& bin, const double start_time, const double end_time) const;
 
   bool use_detector_efficiencies() const;
   bool use_dead_time() const;
@@ -127,9 +131,9 @@ private:
 				  const double start_time, const double end_time) const;
 
   // parsing stuff
-  virtual void set_defaults() override;
-  virtual void initialise_keymap() override;
-  virtual bool post_processing() override;
+  virtual void set_defaults();
+  virtual void initialise_keymap();
+  virtual bool post_processing();
 
   std::string normalisation_ECAT7_filename;
 };

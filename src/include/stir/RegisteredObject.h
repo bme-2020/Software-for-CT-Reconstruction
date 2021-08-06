@@ -13,7 +13,15 @@
     Copyright (C) 2000-2009, Hammersmith Imanet Ltd
     This file is part of STIR.
 
-    SPDX-License-Identifier: Apache-2.0
+    This file is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
+    (at your option) any later version.
+
+    This file is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
     See STIR/LICENSE.txt for details
 */
@@ -31,20 +39,19 @@ START_NAMESPACE_STIR
 
 
 /*!
-  \brief Helper class to provide registry mechanisms to a \c Base class
+  \brief Helper class to provide registry mechanisms to a Base class
   \ingroup buildblock
 
   Suppose you have a hierarchy of classes with (nearly) all public
-  functionality provided by virtual functions of the \c Base (here called
-  \c Root) class.
+  functionality provided by virtual functions of the Base class.
   The aim is then to be able to select <i>at run-time</i> which 
   of the nodes will be used. 
 
   To do this, one needs to enter all
   node classes in a registry. This registry contains a key and a
-  &quot;Root factory&quot; for every node-class. The factory for
+  &quot;Base factory&quot; for every node-class. The factory for
   the node-class returns (a pointer to) a new node-class object, 
-  which of course is also a Root object.
+  which of course is also a Base object.
 
   In STIR, FactoryRegistry provides the type for the registry.
 
@@ -61,25 +68,31 @@ START_NAMESPACE_STIR
   hierarchy by using RegisteredParsingObject in the hierarchy.
   The hierarchy looks normally as follows:
   \code
-  ParsingObject
-  RegisteredObjectBase
-  RegisteredObject<Root>
-  Root
+  RegisteredObject<Base>
+  Base
   ...
   Parent
-  RegisteredParsingObject<Derived,Root,Parent>
+  RegisteredParsingObject<Derived,Base,Parent>
   Derived
   \endcode
 
   When there is no intermediate class in hierarchy, this is simplified to:
   \code
-  ParsingObject
-  RegisteredObjectBase
-  RegisteredObject<Root>
-  Root
-  RegisteredParsingObject<Derived,Root,Root>
+  RegisteredObject<Base>
+  Base
+  RegisteredParsingObject<Derived,Base,Base>
   Derived
   \endcode
+  Aside from the fact that this is simpler, it also is more future proof.
+  Suppose that at some point you want to add parsing keys that are common to 
+  the whole hierarchy. The best/only place to do this is to add them to 
+  the \a Base class. But this can only be done if \a Base is derived from 
+  ParsingObject, and hence there is can be no other ParsingObject in the 
+  hierarchy. So, the recommended variation will need no change at all, while
+  the general version would need change to all nodes.
+
+  As a final note, RegisteredObject could also be used for hierarchies that
+  do not use ParsingObject.
   
   \see RegisteredParsingObject
 
@@ -87,16 +100,10 @@ START_NAMESPACE_STIR
   for the default key (with a 0 factory). This is inappropriate 
   in some cases.
 
-  \warning old versions of Visual C++ cannot inline the registry() function. As a result,
+  \warning Visual C++ cannot inline the registry() function. As a result,
   all possible instantiations of the RegisteredObject template have to be
   defined in RegisteredObject.cxx file(s). You will have link errors if
   you forgot to do this.
-
-  \par Limitation: 
-
-  In the previous (including STIR 4.x) version of this hierarchy, ParsingObject wasn't at the
-  root of everything. However, the current hierarchy is simpler to use, and you can still
-  override relevant members such that ParsingObject is effectively not used.
 */
 template <typename Root>
 class RegisteredObject : public RegisteredObjectBase

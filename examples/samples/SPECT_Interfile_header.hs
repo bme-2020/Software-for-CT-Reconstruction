@@ -43,7 +43,7 @@ Radius := 150
 ; or
 ; orbit := Non-circular
 ; give a list of "radii", one for every position
-; Radii := {150, 151, 153, ....}
+; Radius := {150, 151, 153, ....}
 
 ; pixel sizes in the acquired data, first in "transverse" direction, then in "axial" direction
 !matrix size [1] := 128

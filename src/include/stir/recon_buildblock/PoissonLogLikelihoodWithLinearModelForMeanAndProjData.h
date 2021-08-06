@@ -3,7 +3,15 @@
     Copyright (C) 2018, University College London
     This file is part of STIR.
 
-    SPDX-License-Identifier: Apache-2.0
+    This file is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
+    (at your option) any later version.
+
+    This file is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
     See STIR/LICENSE.txt for details
 */
@@ -217,8 +225,6 @@ public:
                                                           const TargetT &current_estimate, 
                                                           const int subset_num); 
 
-  virtual std::unique_ptr<ExamInfo>
-  get_exam_info_uptr_for_target()  const;
 #if 0
   // currently not used
   float sum_projection_data() const;
@@ -235,14 +241,11 @@ public:
                                                       const int subset_num);
 
   /*!
-    The Hessian (without penalty) is approximately given by:
+    The Hessian (without penalty) is approximatelly given by:
     \f[ H_{jk} = - \sum_i P_{ij} h_i^{''}(y_i) P_{ik} \f]
     where
-    \f[ h_i(l) = y_i log (l) - l; h_i^{''}(y_i) = y_i / ((P \lambda)_i + a_i)^2; \f]
-    and \f$P_{ij} \f$ is the probability matrix.
-
-    This function uses the approximation of the hessian
-    \f[ h_i^{''}(y_i) \approx -1/y_i \f]
+    \f[ h_i(l) = y_i log (l) - l; h_i^{''}(y_i) ~= -1/y_i; \f]
+    and \f$P_{ij} \f$ is the probability matrix. 
     Hence
     \f[ H_{jk} =  \sum_i P_{ij}(1/y_i) P_{ik} \f]
 
@@ -261,31 +264,12 @@ public:
     normalisation factors \f$n_i\f$) times a geometric part:
     \f[ P_{ij} = {1 \over n_i } G_{ij}\f]
 
-    It has also been suggested to use \f$1 \over y_i+1 \f$ (at least if the data are still Poisson).
+    It has also been suggested to use \f$1 \over y_i+1 \f$ (at least if the data are still Poisson.
   */
   virtual Succeeded 
       actual_add_multiplication_with_approximate_sub_Hessian_without_penalty(TargetT& output,
                                                                              const TargetT& input,
                                                                              const int subset_num) const;
-
-  /*!
-    The Hessian (without penalty) is approximately given by:
-    \f[ H_{jk} = - \sum_i P_{ij} h_i^{''}(y_i) P_{ik} \f]
-    where
-    \f[ h_i(l) = y_i log (l) - l; h_i^{''}(y_i) = y_i / ((P \lambda)_i + a_i)^2; \f]
-    and \f$P_{ij} \f$ is the probability matrix.
-
-    Hence
-    \f[ H_{jk} =  \sum_i P_{ij}(y_i / ((P \lambda)_i + a_i)^2) P_{ik} \f]
-
-    This function is computationally expensive and can be approximated, see
-    add_multiplication_with_approximate_sub_Hessian_without_penalty()
-  */
-  virtual Succeeded
-        actual_accumulate_sub_Hessian_times_input_without_penalty(TargetT& output,
-                const TargetT& current_image_estimate,
-                const TargetT& input,
-                const int subset_num) const;
 
 protected:
   //! Filename with input projection data

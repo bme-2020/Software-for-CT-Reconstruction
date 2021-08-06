@@ -1,9 +1,17 @@
 /*
   Copyright (C) 2003-2011, Hammersmith Imanet Ltd
-  Copyright (C) 2018-2020, University College London
+  Copyright (C) 2018-2019, University College London
   This file is part of STIR.
 
-    SPDX-License-Identifier: Apache-2.0
+    This file is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
+    (at your option) any later version.
+
+    This file is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
     See STIR/LICENSE.txt for details
 */
@@ -22,8 +30,6 @@
 
   ; optional: values: PET|nucmed *defaults to PET for backwards compatibility)
   imaging modality:=PET
-  ; optional (but recommended). Needs to be a STIR supported name
-  originating system := ECAT 931
   ; optional patient position keywords (defaulting to "unknown")
   ; orientation: allowed values: head_in|feet_in|other|unknown
   patient orientation := head_in
@@ -205,7 +211,6 @@ initialise_keymap()
   add_key("imaging modality",
     KeyArgument::ASCII, (KeywordProcessor)&GenerateImage::set_imaging_modality,
     &imaging_modality_as_string);
-  add_key("originating system", &exam_info_sptr->originating_system);
   add_key("patient orientation",
 	  &patient_orientation_index,
 	  &patient_orientation_values);
@@ -331,8 +336,8 @@ post_processing()
 GenerateImage::
 GenerateImage(const char * const par_filename)
 {
-  set_defaults();
   initialise_keymap();
+  set_defaults();
   if (par_filename!=0)
     {
       if (parse(par_filename) == false)

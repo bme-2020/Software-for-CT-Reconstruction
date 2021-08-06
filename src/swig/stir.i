@@ -1,9 +1,17 @@
 /*
     Copyright (C) 2011-07-01 - 2012, Kris Thielemans
-    Copyright (C) 2013, 2018, 2020 University College London
+    Copyright (C) 2013, 2018 University College London
     This file is part of STIR.
 
-    SPDX-License-Identifier: Apache-2.0
+    This file is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
+    (at your option) any later version.
+
+    This file is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
     See STIR/LICENSE.txt for details
 */
@@ -50,7 +58,6 @@
  #include "stir/Verbosity.h"
  #include "stir/ProjData.h"
  #include "stir/ProjDataInMemory.h"
- #include "stir/copy_fill.h"
  #include "stir/ProjDataInterfile.h"
 
 #include "stir/CartesianCoordinate2D.h"
@@ -77,16 +84,8 @@
 #include "stir/Shape/EllipsoidalCylinder.h"
 #include "stir/Shape/Box3D.h"
 
-
-#include "stir/evaluation/ROIValues.h"
-#include "stir/evaluation/compute_ROI_values.h"
-
-
 #include "stir/ChainedDataProcessor.h"
 #include "stir/SeparableCartesianMetzImageFilter.h"
-#ifdef HAVE_JSON
-#include "stir/HUToMuImageProcessor.h"
-#endif
 
 #include "stir/recon_buildblock/PoissonLogLikelihoodWithLinearModelForMeanAndProjData.h" 
 #include "stir/OSMAPOSL/OSMAPOSLReconstruction.h"
@@ -97,12 +96,9 @@
 #include "stir/recon_buildblock/QuadraticPrior.h"
 #include "stir/recon_buildblock/PLSPrior.h"
 #include "stir/recon_buildblock/RelativeDifferencePrior.h"
-#include "stir/recon_buildblock/LogcoshPrior.h"
 
 #include "stir/analytic/FBP2D/FBP2DReconstruction.h"
 #include "stir/analytic/FBP3DRP/FBP3DRPReconstruction.h"
-
-#include "stir/recon_buildblock/SqrtHessianRowSum.h"
 
 #include <boost/iterator/reverse_iterator.hpp>
 #include <boost/format.hpp>
@@ -655,9 +651,61 @@ namespace std {
   {
       Array<3,float> array = create_array_for_proj_data(proj_data);
       Array<3,float>::full_iterator array_iter = array.begin_all();
-      copy_to(proj_data, array_iter);
+      //    for (int s=0; s<= proj_data.get_max_segment_num(); ++s)
+      //      {
+      //        SegmentBySinogram<float> segment=proj_data.get_segment_by_sinogram(s);
+      //        std::copy(segment.begin_all_const(), segment.end_all_const(), array_iter);
+      //        std::advance(array_iter, segment.size_all());
+      //        if (s!=0)
+      //          {
+      //            segment=proj_data.get_segment_by_sinogram(-s);
+      //            std::copy(segment.begin_all_const(), segment.end_all_const(), array_iter);
+      //            std::advance(array_iter, segment.size_all());
+      //          }
+      //      }
+      proj_data.copy_to(array_iter);
       return array;
   }
+
+  // inverse of the above function
+  void fill_proj_data_from_3D(ProjData& proj_data, const Array<3,float>& array)
+  {
+      //    int num_sinos=proj_data.get_num_axial_poss(0);
+      //    for (int s=1; s<= proj_data.get_max_segment_num(); ++s)
+      //      {
+      //        num_sinos += 2*proj_data.get_num_axial_poss(s);
+      //      }
+      //    if (array.size() != static_cast<std::size_t>(num_sinos)||
+      //        array[0].size() != static_cast<std::size_t>(proj_data.get_num_views()) ||
+      //        array[0][0].size() != static_cast<std::size_t>(proj_data.get_num_tangential_poss()))
+      //      {
+      //        throw std::runtime_error("Incorrect size for filling this projection data");
+      //      }
+      Array<3,float>::const_full_iterator array_iter = array.begin_all();
+      //
+      //    for (int s=0; s<= proj_data.get_max_segment_num(); ++s)
+      //      {
+      //        SegmentBySinogram<float> segment=proj_data.get_empty_segment_by_sinogram(s);
+      //        // cannot use std::copy sadly as needs end-iterator for range
+      //        for (SegmentBySinogram<float>::full_iterator seg_iter = segment.begin_all();
+      //             seg_iter != segment.end_all();
+      //             /*empty*/)
+      //          *seg_iter++ = *array_iter++;
+      //        proj_data.set_segment(segment);
+      //
+      //        if (s!=0)
+      //          {
+      //            segment=proj_data.get_empty_segment_by_sinogram(-s);
+      //            for (SegmentBySinogram<float>::full_iterator seg_iter = segment.begin_all();
+      //                 seg_iter != segment.end_all();
+      //                 /*empty*/)
+      //              *seg_iter++ = *array_iter++;
+      //            proj_data.set_segment(segment);
+      //          }
+      //      }
+      proj_data.fill_from(array_iter);
+  }
+  
   
  } // end of namespace
 
@@ -936,8 +984,6 @@ T * operator-> () const;
   }
 #endif
 
-%ignore stir::NumericVectorWithOffset::xapyb;
-%ignore stir::NumericVectorWithOffset::axpby;
 %include "stir/NumericVectorWithOffset.h"
 
 #ifdef SWIGPYTHON
@@ -1358,7 +1404,7 @@ namespace stir {
 %include "stir/ProjData.h"
 
 namespace stir {
-%extend ProjData
+%extend ProjData 
   {
 #ifdef SWIGPYTHON
     %feature("autodoc", "create a stir 3D Array from the projection data (internal)") to_array;
@@ -1374,10 +1420,9 @@ namespace stir {
     {
       if (PyIter_Check(arg))
       {
-        // TODO avoid need for copy to Array
         Array<3,float> array = swigstir::create_array_for_proj_data(*$self);
 	swigstir::fill_Array_from_Python_iterator(&array, arg);
-        fill_from(*$self, array.begin_all(), array.end_all());
+        swigstir::fill_proj_data_from_3D(*$self, array);        
       }
       else
       {
@@ -1400,45 +1445,11 @@ namespace stir {
     { 
       Array<3,float> array;
       swigstir::fill_Array_from_matlab(array, pm, true);
-      fill_from(*$self, array.begin_all(), array.end_all());
+      swigstir::fill_proj_data_from_3D(*$self, array);
     }
 #endif
   }
-
-  // horrible repetition of above. should be solved with a macro or otherwise
-  // we need it as ProjDataInMemory has 2 fill() methods, and therefore SWIG doesn't use extended fill() from above
-%extend ProjDataInMemory
-  {
-#ifdef SWIGPYTHON
-    %feature("autodoc", "fill from a Python iterator, e.g. proj_data.fill(numpyarray.flat)") fill;
-    void fill(PyObject* const arg)
-    {
-      if (PyIter_Check(arg))
-      {
-        Array<3,float> array = swigstir::create_array_for_proj_data(*$self);
-	swigstir::fill_Array_from_Python_iterator(&array, arg);
-        fill_from(*$self, array.begin_all(), array.end_all());
-      }
-      else
-      {
-	char str[1000];
-	snprintf(str, 1000, "Wrong argument-type used for fill(): should be a scalar or an iterator or so, but is of type %s",
-		arg->ob_type->tp_name);
-	throw std::invalid_argument(str);
-      } 
-    }
-
-#elif defined(SWIGMATLAB)
-    void fill(const mxArray *pm)
-    { 
-      Array<3,float> array;
-      swigstir::fill_Array_from_matlab(array, pm, true);
-      fill_from(*$self, array.begin_all(), array.end_all());
-    }
-#endif
-  }
-
-}
+ }
 
 %include "stir/ProjDataFromStream.h"
 %include "stir/ProjDataInterfile.h"
@@ -1476,11 +1487,6 @@ namespace stir {
 %include "stir/Shape/EllipsoidalCylinder.h"
 %include "stir/Shape/Box3D.h"
 
-// ROIValues class and compute compute_ROI_values
-%shared_ptr(stir::ROIValues)
-%include "stir/evaluation/ROIValues.h"
-%include "stir/evaluation/compute_ROI_values.h"
-
 // filters
 #ifdef STIRSWIG_SHARED_PTR
 #define elemT float
@@ -1494,21 +1500,12 @@ namespace stir {
 	    stir::DataProcessor<DiscretisedDensity<3,elemT> >,
 	    stir::DataProcessor<DiscretisedDensity<3,elemT> > >)
 %shared_ptr(stir::SeparableCartesianMetzImageFilter<elemT>)
-#ifdef HAVE_JSON
-%shared_ptr(stir::RegisteredParsingObject<stir::HUToMuImageProcessor<DiscretisedDensity<3,elemT> >,
-	    stir::DataProcessor<DiscretisedDensity<3,elemT> >,
-	    stir::DataProcessor<DiscretisedDensity<3,elemT> > >)
-%shared_ptr(stir::HUToMuImageProcessor<DiscretisedDensity<3,elemT> >)
-#endif
 #undef elemT
 #endif
 
 %include "stir/DataProcessor.h"
 %include "stir/ChainedDataProcessor.h"
 %include "stir/SeparableCartesianMetzImageFilter.h"
-#ifdef HAVE_JSON
-%include "stir/HUToMuImageProcessor.h"
-#endif
 
 #define elemT float
 %template(DataProcessor3DFloat) stir::DataProcessor<stir::DiscretisedDensity<3,elemT> >;
@@ -1521,15 +1518,8 @@ namespace stir {
              stir::SeparableCartesianMetzImageFilter<elemT>,
              stir::DataProcessor<DiscretisedDensity<3,elemT> >,
              stir::DataProcessor<DiscretisedDensity<3,elemT> > >;
-%template(SeparableCartesianMetzImageFilter3DFloat) stir::SeparableCartesianMetzImageFilter<elemT>;
-#ifdef HAVE_JSON
-%template(RPHUToMuImageProcessor3DFloat) stir::RegisteredParsingObject<
-             stir::HUToMuImageProcessor<DiscretisedDensity<3,elemT> >,
-             stir::DataProcessor<DiscretisedDensity<3,elemT> >,
-             stir::DataProcessor<DiscretisedDensity<3,elemT> > >;
 
-%template(HUToMuImageProcessor3DFloat) stir::HUToMuImageProcessor<DiscretisedDensity<3,elemT> >;
-#endif
+%template(SeparableCartesianMetzImageFilter3DFloat) stir::SeparableCartesianMetzImageFilter<elemT>;
 #undef elemT
 
 %include "stir/GeneralisedPoissonNoiseGenerator.h"
@@ -1539,7 +1529,6 @@ namespace stir {
 #define TargetT stir::DiscretisedDensity<3,float>
 #define elemT float
 
-%ignore *::get_exam_info_uptr_for_target;
 %shared_ptr(stir::GeneralisedObjectiveFunction<TargetT >);
 %shared_ptr(stir::PoissonLogLikelihoodWithLinearModelForMean<TargetT >);
 %shared_ptr(stir::RegisteredParsingObject<stir::PoissonLogLikelihoodWithLinearModelForMeanAndProjData<TargetT >,
@@ -1562,10 +1551,6 @@ namespace stir {
          stir::GeneralisedPrior<TargetT >,
          stir::GeneralisedPrior<TargetT > >);
 %shared_ptr(stir::RelativeDifferencePrior<elemT>);
-%shared_ptr(stir::RegisteredParsingObject< stir::LogcoshPrior<elemT>,
-        stir::GeneralisedPrior<TargetT >,
-        stir::PriorWithParabolicSurrogate<TargetT  > >);
-%shared_ptr(stir::LogcoshPrior<elemT>);
 
 %shared_ptr(stir::Reconstruction<TargetT >);
 %shared_ptr(stir::IterativeReconstruction<TargetT >);
@@ -1587,8 +1572,6 @@ namespace stir {
 %shared_ptr(stir::FBP2DReconstruction);
 %shared_ptr(stir::FBP3DRPReconstruction);
 
-%shared_ptr(stir::SqrtHessianRowSum<TargetT >);
-
 #undef TargetT
 #undef elemT
 #endif
@@ -1603,7 +1586,6 @@ namespace stir {
 %include "stir/recon_buildblock/QuadraticPrior.h"
 %include "stir/recon_buildblock/PLSPrior.h"
 %include "stir/recon_buildblock/RelativeDifferencePrior.h"
-%include "stir/recon_buildblock/LogcoshPrior.h"
 
 %include "stir/recon_buildblock/Reconstruction.h"
  // there's a get_objective_function, so we'll ignore the sptr version
@@ -1615,8 +1597,6 @@ namespace stir {
 %include "stir/recon_buildblock/AnalyticReconstruction.h"
 %include "stir/analytic/FBP2D/FBP2DReconstruction.h"
 %include "stir/analytic/FBP3DRP/FBP3DRPReconstruction.h"
-
-%include "stir/recon_buildblock/SqrtHessianRowSum.h"
 
 #define TargetT stir::DiscretisedDensity<3,float>
 #define elemT float
@@ -1661,11 +1641,6 @@ namespace stir {
        stir::GeneralisedPrior<TargetT >,
        stir::GeneralisedPrior<TargetT > >;
 %template (RelativeDifferencePrior3DFloat) stir::RelativeDifferencePrior<elemT>;
-%template (RPLogcoshPrior3DFloat)
-stir::RegisteredParsingObject< stir::LogcoshPrior<elemT>,
-        stir::GeneralisedPrior<TargetT >,
-        stir::PriorWithParabolicSurrogate<TargetT  > >;
-%template (LogcoshPrior3DFloat) stir::LogcoshPrior<elemT>;
 
 %template (Reconstruction3DFloat) stir::Reconstruction<TargetT >;
 //%template () stir::Reconstruction<TargetT >;
@@ -1685,8 +1660,6 @@ stir::RegisteredParsingObject< stir::LogcoshPrior<elemT>,
 
 %template (OSMAPOSLReconstruction3DFloat) stir::OSMAPOSLReconstruction<TargetT >;
 %template (OSSPSReconstruction3DFloat) stir::OSSPSReconstruction<TargetT >;
-
-%template (SqrtHessianRowSum3DFloat) stir::SqrtHessianRowSum<TargetT >;
 
 #undef elemT
 #undef TargetT
@@ -1730,3 +1703,8 @@ stir::RegisteredParsingObject< stir::LogcoshPrior<elemT>,
   stir::RegisteredParsingObject<stir::BackProjectorByBinUsingProjMatrixByBin,
      stir::BackProjectorByBin>;
 %include "stir/recon_buildblock/BackProjectorByBinUsingProjMatrixByBin.h"
+
+%include "stir/recon_buildblock/RelativeDifferencePrior.h"
+#define elemT float
+%template (RelativeDifferencePrior3DFloat) stir::RelativeDifferencePrior<elemT >;
+

@@ -4,7 +4,15 @@
     Copyright (C) 2003- 2011, Hammersmith Imanet Ltd
     This file is part of STIR.
 
-    SPDX-License-Identifier: Apache-2.0
+    This file is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
+    (at your option) any later version.
+
+    This file is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
     See STIR/LICENSE.txt for details
 */
@@ -21,8 +29,6 @@
 #define __stir_listmode_CListRecordECAT966_H__
 
 #include "stir/listmode/CListRecord.h"
-#include "stir/listmode/ListGatingInput.h"
-#include "stir/listmode/ListTime.h"
 #include "stir/listmode/CListEventCylindricalScannerWithViewTangRingRingEncoding.h"
 #include "stir/ProjDataInfoCylindrical.h"
 #include "stir/IO/stir_ecat_common.h" // for namespace macros
@@ -159,7 +165,7 @@ class CListTimeDataECAT966
 //! A class for storing and using a timing 'event' from a listmode file from the ECAT 966 scanner
 /*! \ingroup listmode
  */
-class CListTimeECAT966 : public ListTime, public ListGatingInput
+class CListTimeECAT966 : public ListTime, public CListGatingInput
 {
  public:
   Succeeded init_from_data_ptr(const void * const ptr)

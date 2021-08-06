@@ -56,18 +56,18 @@ public:
 
   virtual Succeeded set_up(const shared_ptr<const ProjDataInfo>&);
 
-  float get_bin_efficiency(const Bin& bin) const override;
+  float get_bin_efficiency(const Bin& bin, const double start_time, const double end_time) const;
   //! Normalise some data
   /*! 
     This means \c multiply with the data in the scale factors file.
   */
-  virtual void apply(RelatedViewgrams<float>& viewgrams) const override;
+  virtual void apply(RelatedViewgrams<float>& viewgrams,const double start_time, const double end_time) const;
 
   //! Undo the normalisation of some data
   /*! 
     This means \c divide with the data in th scale factors file.
   */
-  virtual void undo(RelatedViewgrams<float>& viewgrams) const override;
+  virtual void undo(RelatedViewgrams<float>& viewgrams, const double start_time, const double end_time) const;
 
 private:
   // the proj data info used for obtaining axial position num, segment num

@@ -16,7 +16,15 @@
 
     This file is part of STIR.
 
-    SPDX-License-Identifier: Apache-2.0 AND License-ref-PARAPET-license
+    This file is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
+    (at your option) any later version.
+
+    This file is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
     See STIR/LICENSE.txt for details
 */
@@ -142,8 +150,8 @@ set_up(
 
 /*!
     \warning Preconditions
-    <li>abs(axial_pos_num) fits in 17 bits</li>
-    <li>abs(tangential_pos_num) fits in 11 bits</li>   
+    <li>abs(axial_pos_num) fits in 17 bits
+    <li>abs(tangential_pos_num) fits in 11 bits   
   */
 ProjMatrixByBin::CacheKey
 ProjMatrixByBin::cache_key(const Bin& bin) const

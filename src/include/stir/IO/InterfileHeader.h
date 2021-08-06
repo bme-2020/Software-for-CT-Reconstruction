@@ -3,7 +3,15 @@
     Copyright (C) 2013, 2016, 2018, 2020 University College London
     This file is part of STIR.
 
-    SPDX-License-Identifier: Apache-2.0 AND License-ref-PARAPET-license
+    This file is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
+    (at your option) any later version.
+
+    This file is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
     See STIR/LICENSE.txt for details
 */
@@ -31,7 +39,6 @@
 #include "stir/KeyParser.h"
 #include "stir/ProjDataFromStream.h"
 #include "stir/ExamInfo.h"
-#include "stir/date_time_functions.h"
 
 START_NAMESPACE_STIR
 
@@ -119,9 +126,6 @@ protected:
   std::vector<double> image_relative_start_times;
   std::vector<double> image_durations;
   int bytes_per_pixel;
-  
-  std::string isotope_name;
-  float calibration_factor;
 private:
 
   // Louvain la Neuve style of 'image scaling factors'
@@ -154,8 +158,6 @@ public :
   // 'Final' variables
 
   std::string data_file_name;
-
-  DateTimeStrings study_date_time;
 
   //! This will be determined from number_format_index and bytes_per_pixel
   NumericType		type_of_numbers;
@@ -199,7 +201,6 @@ class InterfileImageHeader : public InterfileHeader
 {
  private:
   typedef InterfileHeader base_type;
-    
 
 public:
   InterfileImageHeader();

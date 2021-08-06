@@ -5,7 +5,15 @@
 
 # This file is part of STIR.
 #
-# SPDX-License-Identifier: Apache-2.0
+# This file is free software; you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 2.1 of the License, or
+# (at your option) any later version.
+#
+# This file is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
 #
 # See STIR/LICENSE.txt for details
 
@@ -16,57 +24,50 @@ set(dir IO)
 set (dir_LIB_SOURCES ${dir}_LIB_SOURCES)
 
 set(${dir_LIB_SOURCES}
-  OutputFileFormat.cxx
-  OutputFileFormat_default.cxx
-  InterfileOutputFileFormat.cxx
-  interfile InterfileHeader InterfilePDFSHeaderSPECT.cxx
-  InterfileHeaderSiemens.cxx
-  InputFileFormatRegistry.cxx
-  InterfileDynamicDiscretisedDensityOutputFileFormat.cxx
-  InterfileParametricDiscretisedDensityOutputFileFormat.cxx
-  MultiDynamicDiscretisedDensityOutputFileFormat.cxx
-  MultiParametricDiscretisedDensityOutputFileFormat.cxx
+  OutputFileFormat 
+  OutputFileFormat_default 
+  InterfileOutputFileFormat
+  interfile InterfileHeader InterfilePDFSHeaderSPECT
+  InterfileHeaderSiemens
+  InputFileFormatRegistry 
+  InterfileDynamicDiscretisedDensityOutputFileFormat 
+  InterfileParametricDiscretisedDensityOutputFileFormat
+  MultiDynamicDiscretisedDensityOutputFileFormat
 
-  GIPL_ImageFormat.cxx
-  stir_ecat_common.cxx
+  GIPL_ImageFormat
+  stir_ecat_common 
 ) 
 
 # we can use IO from the itk library
 if (ITK_FOUND)
   list(APPEND ${dir_LIB_SOURCES}
-    ITKOutputFileFormat.cxx
-    ITKImageInputFileFormat.cxx
+    ITKOutputFileFormat
+    ITKImageInputFileFormat  
  )
 endif()
 
 if (LLN_FOUND)
  list(APPEND ${dir_LIB_SOURCES}
-    ECAT7OutputFileFormat.cxx stir_ecat7.cxx
-    ECAT6OutputFileFormat.cxx
-    ECAT7ParametricDensityOutputFileFormat.cxx
-    ECAT7DynamicDiscretisedDensityOutputFileFormat.cxx
-    ECAT7DynamicDiscretisedDensityInputFileFormat.cxx
-    stir_ecat6.cxx ecat6_utils.cxx
+    ECAT7OutputFileFormat stir_ecat7 
+    ECAT6OutputFileFormat 
+    ECAT7ParametricDensityOutputFileFormat 
+    ECAT7DynamicDiscretisedDensityOutputFileFormat 
+    ECAT7DynamicDiscretisedDensityInputFileFormat
+    stir_ecat6 ecat6_utils
  )
 endif()
 
 if (CERN_ROOT_FOUND)
  list(APPEND ${dir_LIB_SOURCES}
-    InputStreamFromROOTFile.cxx
-    InputStreamFromROOTFileForCylindricalPET.cxx
-    InputStreamFromROOTFileForECATPET.cxx
- )
-endif()
-
-if (HDF5_FOUND)
- list(APPEND ${dir_LIB_SOURCES}
-    GEHDF5Wrapper.cxx
+    InputStreamFromROOTFile
+    InputStreamFromROOTFileForCylindricalPET
+    InputStreamFromROOTFileForECATPET
  )
 endif()
 
 if(AVW_FOUND)
   list(APPEND ${dir_LIB_SOURCES}
-    stir_AVW.cxx
+    stir_AVW
   )
 endif()
 
@@ -77,12 +78,7 @@ if (LLN_FOUND)
 endif()
 
 if (CERN_ROOT_FOUND)
-  target_include_directories(IO PRIVATE ${CERN_ROOT_INCLUDE_DIRS})
   target_link_libraries(IO ${CERN_ROOT_LIBRARIES})
-endif()
-
-if (HDF5_FOUND)
-  target_link_libraries(IO ${HDF5_CXX_LIBRARIES})
 endif()
 
 if (AVW_FOUND)

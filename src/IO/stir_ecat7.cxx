@@ -3,7 +3,15 @@
     Copyright (C) 2013, 2018, University College London
     This file is part of STIR.
 
-    SPDX-License-Identifier: Apache-2.0
+    This file is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
+    (at your option) any later version.
+
+    This file is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
     See STIR/LICENSE.txt for details
 */
@@ -711,10 +719,10 @@ void make_ECAT7_main_header(Main_header& mhead,
     scanner.get_inner_ring_radius()*2*
     static_cast<float>(sin(_PI/scanner.get_num_detectors_per_ring()*
 	scanner.get_max_num_non_arccorrected_bins()/2.)/10);
-  mhead.intrinsic_tilt = scanner.get_intrinsic_azimuthal_tilt();
+  mhead.intrinsic_tilt = scanner.get_default_intrinsic_tilt();
   mhead.bin_size = scanner.get_default_bin_size()/10;
   mhead.plane_separation= scanner.get_ring_spacing()/2/10;
-  mhead.intrinsic_tilt = scanner.get_intrinsic_azimuthal_tilt();
+  mhead.intrinsic_tilt = scanner.get_default_intrinsic_tilt();
   
   mhead.distance_scanned=
     mhead.plane_separation * scanner.get_num_rings()*2;
@@ -1372,7 +1380,7 @@ make_pdfs_from_matrix_aux(SUBHEADERPTR sub_header_ptr,
   pdi_ptr->set_num_axial_poss_per_segment(num_axial_poss_per_seg);
     
   std::vector<int> segment_sequence_in_stream =
-    find_segment_sequence(*pdi_ptr);
+    find_segment_sequence_in_stream(*pdi_ptr);
   
   Matval matval;
   mat_numdoc(matrix->matnum, &matval);

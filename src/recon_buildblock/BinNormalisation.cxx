@@ -5,7 +5,15 @@
     Copyright (C) 2014, 2018 University College London
     This file is part of STIR.
 
-    SPDX-License-Identifier: Apache-2.0
+    This file is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
+    (at your option) any later version.
+
+    This file is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
     See STIR/LICENSE.txt for details
 */
@@ -42,25 +50,12 @@ BinNormalisation::
 ~BinNormalisation()
 {}
 
-void BinNormalisation::
-set_exam_info_sptr(const shared_ptr<const ExamInfo> _exam_info_sptr)
-{
-    this->exam_info_sptr=_exam_info_sptr;
-}
-
-shared_ptr<const ExamInfo> BinNormalisation::
-get_exam_info_sptr() const 
-{
-    return this->exam_info_sptr;
-}
-
 Succeeded
 BinNormalisation::
-set_up(const shared_ptr<const ExamInfo>& exam_info_sptr, const shared_ptr<const ProjDataInfo>& proj_data_info_sptr )
+set_up(const shared_ptr<const ProjDataInfo>& proj_data_info_sptr)
 {
   _already_set_up = true;
   _proj_data_info_sptr = proj_data_info_sptr->create_shared_clone();
-  this->exam_info_sptr=exam_info_sptr;
   return Succeeded::yes;  
 }
 
@@ -74,20 +69,12 @@ check(const ProjDataInfo& proj_data_info) const
     error(boost::format("BinNormalisation set-up with different geometry for projection data.\nSet_up was with\n%1%\nCalled with\n%2%")
           % this->_proj_data_info_sptr->parameter_info() % proj_data_info.parameter_info());
 }
-
-void
-BinNormalisation::
-check(const ExamInfo &exam_info) const
-{
-  if (!(*this->exam_info_sptr==exam_info))
-      error(boost::format("BinNormalisation set-up with different ExamInfo.\n Set_up was with\n%1%\nCalled with\n%2%")
-            % this->exam_info_sptr->parameter_info() % exam_info.parameter_info());
-}
   
 // TODO remove duplication between apply and undo by just having 1 functino that does the loops
 
 void 
-BinNormalisation::apply(RelatedViewgrams<float>& viewgrams) const 
+BinNormalisation::apply(RelatedViewgrams<float>& viewgrams,
+			const double start_time, const double end_time) const 
 {
   this->check(*viewgrams.get_proj_data_info_sptr());
   for (RelatedViewgrams<float>::iterator iter = viewgrams.begin(); iter != viewgrams.end(); ++iter)
@@ -100,13 +87,13 @@ BinNormalisation::apply(RelatedViewgrams<float>& viewgrams) const
 	   bin.tangential_pos_num()<=iter->get_max_tangential_pos_num(); 
 	   ++bin.tangential_pos_num())
         (*iter)[bin.axial_pos_num()][bin.tangential_pos_num()] /= 
-          std::max(1.E-20F, get_bin_efficiency(bin));
+          std::max(1.E-20F, get_bin_efficiency(bin, start_time, end_time));
   }
 }
 
 void 
 BinNormalisation::
-undo(RelatedViewgrams<float>& viewgrams) const 
+undo(RelatedViewgrams<float>& viewgrams,const double start_time, const double end_time) const 
 {
   this->check(*viewgrams.get_proj_data_info_sptr());
   for (RelatedViewgrams<float>::iterator iter = viewgrams.begin(); iter != viewgrams.end(); ++iter)
@@ -119,18 +106,17 @@ undo(RelatedViewgrams<float>& viewgrams) const
 	   bin.tangential_pos_num()<=iter->get_max_tangential_pos_num(); 
 	   ++bin.tangential_pos_num())
          (*iter)[bin.axial_pos_num()][bin.tangential_pos_num()] *= 
-	   this->get_bin_efficiency(bin);
+	   this->get_bin_efficiency(bin,start_time, end_time);
   }
 
 }
 
 void 
 BinNormalisation::
-apply(ProjData& proj_data,
+apply(ProjData& proj_data,const double start_time, const double end_time, 
       shared_ptr<DataSymmetriesForViewSegmentNumbers> symmetries_sptr) const
 {
   this->check(*proj_data.get_proj_data_info_sptr());
-  this->check(proj_data.get_exam_info());
   if (is_null_ptr(symmetries_sptr))
     symmetries_sptr.reset(new TrivialDataSymmetriesForBins(proj_data.get_proj_data_info_sptr()->create_shared_clone()));
 
@@ -160,7 +146,7 @@ apply(ProjData& proj_data,
           proj_data.get_related_viewgrams(vs, symmetries_sptr);
       }
 
-      this->apply(viewgrams);
+      this->apply(viewgrams, start_time, end_time);
 
 #ifdef STIR_OPENMP
 #pragma omp critical (BINNORMALISATION_APPLY__VIEWGRAMS)
@@ -173,11 +159,10 @@ apply(ProjData& proj_data,
 
 void 
 BinNormalisation::
-undo(ProjData& proj_data,
+undo(ProjData& proj_data,const double start_time, const double end_time, 
      shared_ptr<DataSymmetriesForViewSegmentNumbers> symmetries_sptr) const
 {
   this->check(*proj_data.get_proj_data_info_sptr());
-  this->check(proj_data.get_exam_info());
   if (is_null_ptr(symmetries_sptr))
     symmetries_sptr.reset(new TrivialDataSymmetriesForBins(proj_data.get_proj_data_info_sptr()->create_shared_clone()));
 
@@ -203,7 +188,7 @@ undo(ProjData& proj_data,
           proj_data.get_related_viewgrams(vs, symmetries_sptr);
       }
 
-      this->undo(viewgrams);
+      this->undo(viewgrams, start_time, end_time);
 
 #ifdef STIR_OPENMP
 #pragma omp critical (BINNORMALISATION_UNDO__VIEWGRAMS)

@@ -1,10 +1,17 @@
 /*
     Copyright (C) 2000- 2009, Hammersmith Imanet Ltd
     Copyright (C) 2013, Kris Thielemans
-    Copyright (C) 2020, University College London
     This file is part of STIR.
 
-    SPDX-License-Identifier: Apache-2.0
+    This file is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
+    (at your option) any later version.
+
+    This file is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
     See STIR/LICENSE.txt for details
 */
@@ -58,19 +65,6 @@
 /*! \namespace stir::ecat::ecat6
   \brief Namespace for the ECAT6 IO part of the STIR library (and some/most of its applications)
   */
-
-
-/*! \namespace stir::GE
-  \brief Namespace for the part of the STIR library that handles GE data (and some/most of its applications)
-
-  This namespace contains all routines that are common to all GE formats
-*/
-/*! \namespace stir::GE:RDF_HDF5
-  \brief Namespace for the part of the STIR library that handles GE data with HDF5-based file formats
-
-  This namespace contains all routines that are used for GE RDF10 etc
-*/
-
 /*!
 \defgroup STIR STIR
 All of STIR.
@@ -156,10 +150,6 @@ for parsing are provided such that different image processors can
 be selected at run-time.
 
 */
-/*!
-\defgroup date_time Items related to date/time processing
-\ingroup buildblock
-*/
 
 /*!
 \defgroup threads Items relating to threading of certain STIR functions.
@@ -200,14 +190,10 @@ from/to file.
 \ingroup IO
 */
 /*!
-\defgroup ECAT ECAT6 ... ECAT8 support in the IO library
+\defgroup ECAT ECAT6 and ECAT7 support in the IO library
 \ingroup IO
 */
 
-/*!
-\defgroup GE support for GE data
-\ingroup IO
-*/
 
 /*! 
 \defgroup listmode Support classes for reading list mode data
@@ -289,12 +275,6 @@ Classes and functions that are used to provide an interface to NiftyPET
 functionality. This includes projectors, unlisting and norms and randoms
 estimation. Currently only available for the mMR scanner, and requires CUDA.
 */
-/*!
-\defgroup Parallelproj Wrapped Parallelproj functionality in STIR
-\ingroup projectors
-Classes and functions that are used to provide an interface to Parallelproj
-functionality. This includes a forward and back projector, and requires CUDA.
-*/
 
 /*!
 \defgroup reconstructors Reconstruction classes
@@ -304,11 +284,6 @@ functionality. This includes a forward and back projector, and requires CUDA.
 \defgroup OSMAPOSL OSMAPOSL
 \ingroup reconstructors
 Implementation of the OSMAP One-Step-Late reconstruction algorithm
-*/
-/*!
-\defgroup KOSMAPOSL KOSMAPOSL
-\ingroup OSMAPOSL
-Implementation of the kernel-based OSMAP One-Step-Late reconstruction algorithm
 */
 /*!
 \defgroup OSSPS OSSPS

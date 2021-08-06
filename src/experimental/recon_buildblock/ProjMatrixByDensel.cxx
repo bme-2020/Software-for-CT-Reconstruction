@@ -5,14 +5,16 @@
   \file
   \ingroup recon_buildblock
   
-  \brief  implementation of the stir::ProjMatrixByDensel class 
+  \brief  implementation of the ProjMatrixByDensel class 
     
+  \author Mustapha Sadki
   \author Kris Thielemans
+  \author PARAPET project
       
 */
 /*
+    Copyright (C) 2000 PARAPET partners
     Copyright (C) 2000- 2004, Hammersmith Imanet Ltd
-    SPDX-License-Identifier: Apache-2.0
     See STIR/LICENSE.txt for details
 */
 

@@ -3,10 +3,18 @@
 /*
     Copyright (C) 2000 PARAPET partners
     Copyright (C) 2000- 2011, Hammersmith Imanet Ltd
-    Copyright (C) 2018 - 2020 University College London
+    Copyright (C) 2018, University College London
     This file is part of STIR.
 
-    SPDX-License-Identifier: Apache-2.0 AND License-ref-PARAPET-license
+    This file is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
+    (at your option) any later version.
+
+    This file is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
     See STIR/LICENSE.txt for details
 */
@@ -366,30 +374,24 @@ template <typename TargetT>
 TargetT *
 IterativeReconstruction<TargetT>::get_initial_data_ptr() const
 {
-  if (is_null_ptr(this->objective_function_sptr))
-    error("objective function needs to be set before calling get_initial_data_ptr");
-
-  TargetT * result;
-
   if(this->initial_data_filename=="0")
   {
-    result = this->objective_function_sptr->construct_target_ptr();
+    return this->objective_function_sptr->construct_target_ptr();
   }
   else if(this->initial_data_filename=="1")
   {
-    result = this->objective_function_sptr->construct_target_ptr();
-    std::fill(result->begin_all(), result->end_all(), 1.F);
+    TargetT * target_data_ptr =
+      this->objective_function_sptr->construct_target_ptr();    
+    std::fill(target_data_ptr->begin_all(), target_data_ptr->end_all(), 1.F);
+    return target_data_ptr;
   }
   else
     {
-      result = TargetT::read_from_file(this->initial_data_filename);
-      result->set_exam_info(*this->get_input_data().get_exam_info_sptr());
+      TargetT * target_ptr =
+        TargetT::read_from_file(this->initial_data_filename);
+      target_ptr->set_exam_info(this->get_input_data().get_exam_info());
+      return target_ptr;
     }
-  if (this->_already_set_up)
-    if (!this->target_data_sptr->has_same_characteristics(*result))
-      error("IterativeReconstruction::get_initial_data_ptr() results in different characteristics than what was used for set_up()");
-
-  return result;
 }
 
 // KT 10122001 new
@@ -621,8 +623,6 @@ IterativeReconstruction<TargetT>::
 set_input_data(const shared_ptr<ExamData> &arg)
 {
   this->_already_set_up = false;
-  if (is_null_ptr(this->objective_function_sptr))
-    error("objective function needs to be set before calling set_input_data");
   this->objective_function_sptr->set_input_data(arg);
 }
 
@@ -631,8 +631,6 @@ const ExamData&
 IterativeReconstruction<TargetT>::
 get_input_data() const
 {
-  if (is_null_ptr(this->objective_function_sptr))
-    error("objective function needs to be set before calling get_input_data");
   return this->objective_function_sptr->get_input_data();
 }
 

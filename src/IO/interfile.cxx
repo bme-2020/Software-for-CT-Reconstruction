@@ -4,7 +4,15 @@
     Copyright (C) 2013, 2018, University College London
     This file is part of STIR.
 
-    SPDX-License-Identifier: Apache-2.0 AND License-ref-PARAPET-license
+    This file is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
+    (at your option) any later version.
+
+    This file is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
     See STIR/LICENSE.txt for details
 */
@@ -47,7 +55,6 @@
 #include "stir/error.h"
 #include "stir/DynamicDiscretisedDensity.h"
 #include "stir/modelling/ParametricDiscretisedDensity.h"
-#include "stir/date_time_functions.h"
 #include <boost/format.hpp>
 #include <fstream>
 #include <algorithm>
@@ -573,27 +580,12 @@ write_basic_interfile_image_header(const string& header_file_name,
   output_header << "!GENERAL DATA :=\n";
   write_interfile_patient_position(output_header, exam_info);
   output_header << "!GENERAL IMAGE DATA :=\n";
-  if (exam_info.start_time_in_secs_since_1970>0)
-    {
-      const DateTimeStrings dt =
-        secs_since_Unix_epoch_to_Interfile_datetime(exam_info.start_time_in_secs_since_1970);
-      output_header << "study date := " << dt.date << '\n';
-      output_header << "study time := " << dt.time << '\n';
-    }
   output_header << "!type of data := " << (is_spect ? "Tomographic" : "PET") << '\n';
   output_header << "imagedata byte order := " <<
     (byte_order == ByteOrder::little_endian 
      ? "LITTLEENDIAN"
      : "BIGENDIAN")
 		<< endl;
-  
-  if (exam_info.get_calibration_factor()>0.F)
-  output_header << "calibration factor := "  
-                <<exam_info.get_calibration_factor() << endl;
-  
-  if (!exam_info.get_radionuclide().empty())
-  output_header << "isotope name := "  
-                <<exam_info.get_radionuclide()  << endl;
 
   if (is_spect)
     {
@@ -1081,19 +1073,20 @@ read_interfile_PDFS(istream& input,
         warning("Interfile parsing failed");
         return 0;
       }
-    input.clear(); // clear EOF or other flags before we proceed
     input.seekg(offset);
     if (hdr.get_exam_info().imaging_modality.get_modality() ==
         ImagingModality::NM)
       {
         // spect data
+        input.seekg(offset);
         return read_interfile_PDFS_SPECT(input, directory_for_data, open_mode); 
       }
-    if (!hdr.siemens_mi_version.empty())
+	  if (!hdr.siemens_mi_version.empty())
       {
+		     input.seekg(offset);
          return read_interfile_PDFS_Siemens(input, directory_for_data, open_mode);
       }
-  }
+	}
     
   // if we get here, it's PET
 
@@ -1180,8 +1173,14 @@ write_basic_interfile_PDFS_header(const string& header_file_name,
 
   const vector<int> segment_sequence = pdfs.get_segment_sequence_in_stream();
 
+#if 0
+  // TODO get_phi currently ignores view offset
   const float angle_first_view = 
-    pdfs.get_proj_data_info_sptr()->get_scanner_ptr()->get_intrinsic_azimuthal_tilt() * float(180/_PI);
+    pdfs.get_proj_data_info_sptr()->get_phi(Bin(0,0,0,0)) * float(180/_PI);
+#else
+  const float angle_first_view = 
+    pdfs.get_proj_data_info_sptr()->get_scanner_ptr()->get_default_intrinsic_tilt() * float(180/_PI);
+#endif
   const float angle_increment = 
     (pdfs.get_proj_data_info_sptr()->get_phi(Bin(0,1,0,0)) -
      pdfs.get_proj_data_info_sptr()->get_phi(Bin(0,0,0,0))) * float(180/_PI);
@@ -1271,7 +1270,7 @@ write_basic_interfile_PDFS_header(const string& header_file_name,
       else
         {
           output_header << "orbit := Non-circular\n";
-          output_header << "Radii := " << ring_radii << '\n';
+          output_header << "Radius := " << ring_radii << '\n';
         }
 
       output_header << "!matrix size [1] := "

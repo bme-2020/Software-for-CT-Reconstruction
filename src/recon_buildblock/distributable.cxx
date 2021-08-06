@@ -4,7 +4,15 @@
     Copyright (C) 2013-2014, University College London
     This file is part of STIR.
 
-    SPDX-License-Identifier: Apache-2.0 AND License-ref-PARAPET-license
+    This file is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
+    (at your option) any later version.
+
+    This file is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
     See STIR/LICENSE.txt for details
 */
@@ -214,7 +222,7 @@ void get_viewgrams(shared_ptr<RelatedViewgrams<float> >& y,
 #ifdef STIR_OPENMP
 #pragma omp critical(MULT)
 #endif
-      normalisation_sptr->undo(*mult_viewgrams_sptr);
+      normalisation_sptr->undo(*mult_viewgrams_sptr,start_time_of_frame,end_time_of_frame);
     }
                         
   if (view_segment_num.segment_num()==0 && zero_seg0_end_planes)
@@ -414,7 +422,7 @@ void distributable_computation(
 #ifdef STIR_OPENMP
 #pragma omp single
     {
-      info(boost::format("Starting loop with %1% threads") % omp_get_num_threads(), 2);
+      info(boost::format("Starting loop with %1% threads") % omp_get_num_threads());
       local_log_likelihoods.resize(omp_get_max_threads(), 0.);
       local_counts.resize(omp_get_max_threads(), 0);
       local_count2s.resize(omp_get_max_threads(), 0);
@@ -465,7 +473,7 @@ void distributable_computation(
           const int thread_num=omp_get_thread_num();
           info(boost::format("Thread %d/%d calculating segment_num: %d, view_num: %d")
                % thread_num % omp_get_num_threads()
-               % view_segment_num.segment_num() % view_segment_num.view_num(), 2);
+               % view_segment_num.segment_num() % view_segment_num.view_num());
 #else
           info(boost::format("calculating segment_num: %d, view_num: %d")
                % view_segment_num.segment_num() % view_segment_num.view_num(), 2);

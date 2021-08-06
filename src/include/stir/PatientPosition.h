@@ -3,7 +3,15 @@
     Copyright (C) 2013, University College London
     This file is part of STIR.
 
-    SPDX-License-Identifier: Apache-2.0
+    This file is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
+    (at your option) any later version.
+
+    This file is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
     See STIR/LICENSE.txt for details
 */
@@ -71,12 +79,6 @@ class PatientPosition
     }
 
   explicit PatientPosition(PositionValue position);
- 
- bool operator == (const PatientPosition &p1) const { 
-     return  this->get_orientation()==p1.get_orientation() &&
-             this->get_position()==p1.get_position() &&
-             this->get_position_as_string()==p1.get_position_as_string() &&
-             this->get_rotation()==p1.get_rotation(); }
 
   void
     set_rotation(const RotationValue rotation_v)

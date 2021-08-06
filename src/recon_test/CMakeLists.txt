@@ -2,7 +2,15 @@
 # Copyright (C) 2013-2014, University College London
 # This file is part of STIR.
 #
-# SPDX-License-Identifier: Apache-2.0
+# This file is free software; you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 2.1 of the License, or
+# (at your option) any later version.
+#
+# This file is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
 #
 # See STIR/LICENSE.txt for details
 
@@ -16,9 +24,6 @@ set(dir_SIMPLE_TEST_EXE_SOURCES_NO_REGISTRIES ${dir}_SIMPLE_TEST_EXE_SOURCES_NO_
 
 set(${dir_SIMPLE_TEST_EXE_SOURCES}
 	test_DataSymmetriesForBins_PET_CartesianGrid
-        test_FBP2D
-        test_FBP3DRP
-        test_priors
 )
 
 
@@ -27,7 +32,6 @@ set(${dir_INVOLVED_TEST_EXE_SOURCES}
         bcktest
         recontest
         test_data_processor_projectors
-        test_OSMAPOSL
 )
 
 include(stir_test_exe_targets)
@@ -43,11 +47,4 @@ endif()
 # test_data_processor_projectors requires input argument
 ADD_TEST(test_data_processor_projectors test_data_processor_projectors ${CMAKE_SOURCE_DIR}/recon_test_pack/Utahscat600k_ca_seg4.hs)
 
-
-# test_OSMAPOSL can take input argument
-ADD_TEST(test_OSMAPOSL_ray_tracing_matrix  test_OSMAPOSL)
-
-if (parallelproj_FOUND)
-  ADD_TEST(test_OSMAPOSL_parallelproj  test_OSMAPOSL ${CMAKE_SOURCE_DIR}/examples/samples/projector_pair_parallelproj.par)
-endif()
-
+# TODO test_modelling.sh

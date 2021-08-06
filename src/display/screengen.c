@@ -18,7 +18,6 @@
 /*
     Copyright (C) 2000 PARAPET partners
     Copyright (C) 2000- 2001, IRSL
-    SPDX-License-Identifier: Apache-2.0 AND License-ref-PARAPET-license
     See STIR/LICENSE.txt for details
 */
 #include "gen.h"

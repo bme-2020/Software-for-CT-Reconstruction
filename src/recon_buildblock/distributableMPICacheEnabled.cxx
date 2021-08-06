@@ -4,7 +4,15 @@
     Copyright (C) 2013, University College London
     This file is part of STIR.
 
-    SPDX-License-Identifier: Apache-2.0 AND License-ref-PARAPET-license
+    This file is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
+    (at your option) any later version.
+
+    This file is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
     See STIR/LICENSE.txt for details
 */
@@ -22,7 +30,7 @@
   \author PARAPET project
   \author Tobias Beisel
 */
-/* Modification history:d
+/* Modification history:
    KT 30/05/2002
    get rid of dependence on specific symmetries (i.e. views up to 45 degrees)
    
@@ -124,7 +132,7 @@ void get_viewgrams(shared_ptr<RelatedViewgrams<float> >& y,
       mult_viewgrams_sptr.reset(
         new RelatedViewgrams<float>(proj_dat_ptr->get_empty_related_viewgrams(view_segment_num, symmetries_ptr)));
       mult_viewgrams_sptr->fill(1.F);
-      normalisation_sptr->undo(*mult_viewgrams_sptr);
+      normalisation_sptr->undo(*mult_viewgrams_sptr,start_time_of_frame,end_time_of_frame);
     }
                         
   if (view_segment_num.segment_num()==0 && zero_seg0_end_planes)

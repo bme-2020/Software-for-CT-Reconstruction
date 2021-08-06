@@ -2,7 +2,15 @@
     Copyright (C) 2004-2009, Hammersmith Imanet Ltd
     This file is part of STIR.
 
-    SPDX-License-Identifier: Apache-2.0
+    This file is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
+    (at your option) any later version.
+
+    This file is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
     See STIR/LICENSE.txt for details
 */
@@ -104,7 +112,7 @@ main (int argc, char **argv)
     for (vector<int>::iterator col = columns.begin() ; col < columns.end() ; ++col) {
       
       if ( *col >= 0 && *col < total_singles_units ) {
-        float val = singles_from_ecat7.get_singles(*col, frame);
+        float val = singles_from_ecat7.get_singles_rate(*col, frame);
         
         cout << setw(9) << val << " ";
       }

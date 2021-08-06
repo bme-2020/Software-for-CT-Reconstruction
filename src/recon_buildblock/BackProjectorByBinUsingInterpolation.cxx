@@ -6,7 +6,15 @@
     Copyright (C) 2018, University College London
     This file is part of STIR.
 
-    SPDX-License-Identifier: Apache-2.0 AND License-ref-PARAPET-license
+    This file is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
+    (at your option) any later version.
+
+    This file is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
     See STIR/LICENSE.txt for details
 */
@@ -127,10 +135,6 @@ BackProjectorByBinUsingInterpolation::set_up(shared_ptr<const ProjDataInfo> cons
 				     shared_ptr<const DiscretisedDensity<3,float> > const& image_info_ptr)
 {
   BackProjectorByBin::set_up(proj_data_info_ptr, image_info_ptr);
-
-  if (fabs(proj_data_info_ptr->get_phi(Bin(0,0,0,0)))>1.E-4F)
-    error("BackProjectorByBinUsingInterpolation cannot handle non-zero view-offset. Sorry");
-
   this->symmetries_ptr.
     reset(new DataSymmetriesForBins_PET_CartesianGrid(proj_data_info_ptr, image_info_ptr,
 						      do_symmetry_90degrees_min_phi,

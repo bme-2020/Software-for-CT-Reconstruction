@@ -19,7 +19,15 @@
     Copyright (C) 2000- 2013, Hammersmith Imanet Ltd
     This file is part of STIR.
 
-    SPDX-License-Identifier: Apache-2.0 AND License-ref-PARAPET-license
+    This file is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
+    (at your option) any later version.
+
+    This file is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
     See STIR/LICENSE.txt for details
 */
@@ -135,17 +143,14 @@ public:
   float get_scale_factor() const;  
 
   //! Get the value of bin.
-  virtual float get_bin_value(const Bin& this_bin) const;
+  float get_bin_value(const Bin& this_bin) const;
   
   //! Set the value of the bin
-  virtual void set_bin_value(const Bin &bin);
+  void set_bin_value(const Bin &bin);
     
 protected:
   //! the stream with the data
   shared_ptr<std::iostream> sino_stream;
-
-  //! Calculate the offsets for specific bins.
-  std::vector<std::streamoff> get_offsets_bin(const Bin) const;
 
 private:
   //! offset of the whole 3d sinogram in the stream
@@ -175,6 +180,9 @@ private:
   //! Calculate offsets for sinogram data
   std::vector<std::streamoff> get_offsets_sino(const int ax_pos_num, const int segment_num) const;
     
+  //! Calculate the offsets for specific bins.
+  std::vector<std::streamoff> get_offsets_bin(const Bin) const;
+  
 private:
 #if __cplusplus > 199711L
   ProjDataFromStream& operator=(ProjDataFromStream&&) = delete;

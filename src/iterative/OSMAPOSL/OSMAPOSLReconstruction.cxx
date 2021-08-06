@@ -5,10 +5,17 @@
     Copyright (C) 2000 - 2011-12-31, Hammersmith Imanet Ltd
     Copyright (C) 2012-06-05 - 2012, Kris Thielemans
     Copyright (C) 2018 Commonwealth Scientific and Industrial Research Organisation
-    Copyright (C) 2019 - 2020 University College London
     This file is part of STIR.
 
-    SPDX-License-Identifier: Apache-2.0 AND License-ref-PARAPET-license
+    This file is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This file is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
     See STIR/LICENSE.txt for details
 */
@@ -47,7 +54,6 @@
 #include "stir/modelling/ParametricDiscretisedDensity.h"
 #include "stir/modelling/KineticParameters.h"
 
-#include <boost/format.hpp>
 #include <memory>
 #include <iostream>
 #ifdef BOOST_NO_STRINGSTREAM
@@ -193,8 +199,12 @@ post_processing()
   if (!this->objective_function_sptr->prior_is_zero())
   {
     // TODO MAP_model really should be an ASCIIlist, without automatic checking on values
-    // let set_MAP_model do the checking
-    this->set_MAP_model(this->MAP_model);
+    if (MAP_model != "additive" && MAP_model != "multiplicative")
+    {
+      error("MAP model should have as value 'additive' or 'multiplicative', while it is '%s'",
+        MAP_model.c_str());
+      return true;
+    }
   }
   return false;
 }
@@ -246,9 +256,6 @@ OSMAPOSLReconstruction<TargetT>::
 set_MAP_model(const std::string& arg)
 {
   this->MAP_model  = arg;
-  if (MAP_model != "additive" && MAP_model != "multiplicative")
-    error(boost::format("MAP model should have as value 'additive' or 'multiplicative', while it is '%s'") %
-          MAP_model);
 }
 
 //*********** other functions ***********

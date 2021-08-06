@@ -13,10 +13,18 @@
 /*
     Copyright (C) 2003- 2012, Hammersmith Imanet Ltd
     Copyright (C) 2019, National Physical Laboratory
-    Copyright (C) 2019, 2021, University College London
+    Copyright (C) 2019, University College London
     This file is part of STIR.
 
-    SPDX-License-Identifier: Apache-2.0
+    This file is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
+    (at your option) any later version.
+
+    This file is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
     See STIR/LICENSE.txt for details
 */
@@ -89,27 +97,20 @@ bool
 LmToProjDataWithRandomRejection<LmToProjDataT>::
 post_processing()
 {
-  return LmToProjDataT::post_processing();
-}
-
-template <typename LmToProjDataT>
-Succeeded LmToProjDataWithRandomRejection<LmToProjDataT>::set_up()
-{
-  if (LmToProjDataT::set_up() == Succeeded::no)    
-    return Succeeded::no;
+  if (LmToProjData::post_processing())
+    return true;
 
   if (this->seed == 0)
     {
-      error("Seed needs to be non-zero"); return Succeeded::no;
+      warning("Seed needs to be non-zero"); return true;
     }
 
   if (this->reject_if_above<0.F || this->reject_if_above>1.F)
     {
-      error("reject_if_above needs to be between 0 and 1"); return Succeeded::no;
+      warning("reject_if_above needs to be between 0 and 1"); return true;
     }
 
-  return Succeeded::yes;
-
+  return false;
 }
 
 template <typename LmToProjDataT> 

@@ -1,9 +1,17 @@
 /*
     Copyright (C) 2002 - 2011-02-23, Hammersmith Imanet Ltd
-    Copyright (C) 2019-2020, UCL
+    Copyright (C) 2019, UCL
     This file is part of STIR.
 
-    SPDX-License-Identifier: Apache-2.0
+    This file is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
+    (at your option) any later version.
+
+    This file is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
     See STIR/LICENSE.txt for details
 */
@@ -19,7 +27,7 @@
 #define __stir_ProjDataInMemory_H__
 
 #include "stir/ProjDataFromStream.h" 
-#include "stir/Array.h"
+#include "boost/shared_array.hpp"
 #include <string>
 
 /* Implementation note (KT)
@@ -72,115 +80,25 @@ public:
   //! Copy constructor
   ProjDataInMemory (const ProjDataInMemory& proj_data);
 
-  //! set all bins to the same value
-  /*! will call error() if setting failed */
-  virtual void fill(const float value);
-
-  //! set all bins from another ProjData object
-  /*! will call error() if setting failed or if the 'source' proj_data is not compatible.
-    The current check requires at least the same segment numbers (but the source can have more),
-    all other geometric parameters have to be the same.
- */
-  virtual void fill(const ProjData&);
-
   //! destructor deallocates all memory the object owns
   virtual ~ProjDataInMemory();
  
   //! Returns a  value of a bin
   float get_bin_value(Bin& bin);
-  
-  void set_bin_value(const Bin &bin);
     
-  //! \deprecated a*x+b*y (\see xapyb)
-  STIR_DEPRECATED virtual void axpby(const float a, const ProjData& x,
-                                     const float b, const ProjData& y);
-
-  //! set values of the array to x*a+y*b, where a and b are scalar, and x and y are ProjData.
-  /// This implementation requires that x and y are ProjDataInMemory
-  /// (else falls back on general method)
-  virtual void xapyb(const ProjData& x, const float a,
-                     const ProjData& y, const float b);
-
-  //! set values of the array to x*a+y*b, where a, b, x and y are ProjData.
-  /// This implementation requires that a, b, x and y are ProjDataInMemory
-  /// (else falls back on general method)
-  virtual void xapyb(const ProjData& x, const ProjData& a,
-                     const ProjData& y, const ProjData& b);
-
-  //! set values of the array to self*a+y*b where a and b are scalar, y is ProjData
-  /// This implementation requires that a, b and y are ProjDataInMemory
-  /// (else falls back on general method)  
-  virtual void sapyb(const float a, const ProjData& y, const float b);
-
-  //! set values of the array to self*a+y*b where a, b and y are ProjData
-   /// This implementation requires that a, b and y are ProjDataInMemory
-  /// (else falls back on general method)   
-  virtual void sapyb(const ProjData& a, const ProjData& y, const ProjData& b);
-
-  /** @name iterator typedefs
-   *  iterator typedefs
-   */
-  ///@{
-  typedef Array<1,float>::iterator iterator;
-  typedef Array<1,float>::const_iterator const_iterator;
-  typedef Array<1,float>::full_iterator full_iterator;
-  typedef Array<1,float>::const_full_iterator const_full_iterator;
-  ///@}
-
-  //! start value for iterating through all elements in the array, see iterator
-  inline iterator begin()
-  { return buffer.begin(); }
-  //! start value for iterating through all elements in the (const) array, see iterator
-  inline const_iterator begin() const
-  { return buffer.begin(); }
-  //! end value for iterating through all elements in the array, see iterator
-  inline iterator end()
-  { return buffer.end(); }
-  //! end value for iterating through all elements in the (const) array, see iterator
-  inline const_iterator end() const
-  { return buffer.end(); }
-  //! start value for iterating through all elements in the array, see iterator
-  inline iterator begin_all()
-  { return buffer.begin_all(); }
-  //! start value for iterating through all elements in the (const) array, see iterator
-  inline const_iterator begin_all() const
-  { return buffer.begin_all(); }
-  //! end value for iterating through all elements in the array, see iterator
-  inline iterator end_all()
-  { return buffer.end_all(); }
-  //! end value for iterating through all elements in the (const) array, see iterator
-  inline const_iterator end_all() const
-  { return buffer.end_all(); }
-
- //! \name access to the data via a pointer
-  //@{
-  //! member function for access to the data via a float*
-  inline float* get_data_ptr()
-  { return buffer.get_data_ptr(); }
-
-  //! member function for access to the data via a const float*
-  inline const float * get_const_data_ptr() const
-  { return buffer.get_const_data_ptr(); }
-
-  //! signal end of access to float*
-  inline void release_data_ptr()
-  { buffer.release_data_ptr(); }
-
-  //! signal end of access to const float*
-  inline void release_const_data_ptr() const
-  { buffer.release_const_data_ptr(); }
-  //@}
-
 private:
-  Array<1,float> buffer;
+  // an auto_ptr doesn't work in gcc 2.95.2 because of assignment problems, so we use shared_array
+  // note however that the buffer is not shared. we just use it such that its memory gets 
+  // deallocated automatically.
+  boost::shared_array<char> buffer;
   
-  size_t get_size_of_buffer_in_bytes() const;
+  size_t get_size_of_buffer() const;
 
   //! allocates buffer for storing the data. Has to be called by constructors before create_stream()
-  void create_buffer(const bool initialise_with_0 = false);
+  char * create_buffer(const bool initialise_with_0 = false) const;
 
   //! Create a new stream
-  void create_stream();
+  shared_ptr<std::iostream> create_stream() const;
 };
 
 END_NAMESPACE_STIR

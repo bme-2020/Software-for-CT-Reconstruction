@@ -2,8 +2,7 @@
 //
 /*
     Copyright (C) 2005- 2005 , Hammersmith Imanet Ltd
-    SPDX-License-Identifier: Apache-2.0
-    See STIR/LICENSE.txt for details
+    For internal GE use only
 */
 #ifndef __stir_AbsTimeIntervalFromECAT7ACF__H__
 #define __stir_AbsTimeIntervalFromECAT7ACF__H__

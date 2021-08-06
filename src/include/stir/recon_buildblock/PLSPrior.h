@@ -5,7 +5,15 @@
 
     This file is part of STIR.
 
-    SPDX-License-Identifier: Apache-2.0
+    This file is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
+    (at your option) any later version.
+
+    This file is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
     See STIR/LICENSE.txt for details.
 */
@@ -42,7 +50,7 @@ START_NAMESPACE_STIR
   https://doi.org/10.1109/TMI.2016.2549601
   Note that PLS becomes smoothed TV when an uniform anatomical image is provided.
 
-  The prior has 2 parameters alpha and eta. It is computed for an image \f$ f \f$ as
+  The prior has 2 parameters alpha and eta. It is computed for an image \f$ f f$ as
 
   \f[
   \phi(f) = \sqrt{\alpha^2 + |\nabla f|^2 - {\langle\nabla f,\xi\rangle}^2}
@@ -54,7 +62,7 @@ START_NAMESPACE_STIR
   \xi = \frac{\nabla v}{\sqrt{|\nabla v|^2 + \eta^2}}
   \f]
 
-  with \f$ v \f$ the anatomical image, \f$ \alpha \f$ controls the edge-preservation property of PLS, and depends on the scale
+  with \f$ v f$ the anatomical image, \f$ \alpha \f$ controls the edge-preservation property of PLS, and depends on the scale
   of the emission image,  and \f$ \eta \f$ avoids division by zero, and depends on the scale of the anatomical image.
 
 

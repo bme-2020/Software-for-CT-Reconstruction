@@ -31,8 +31,6 @@ class ObjectTransformation :
   public RegisteredObject<ObjectTransformation<num_dimensions, elemT> >
 {
 public:
-  //! typedef used by read_from_file
-  typedef ObjectTransformation hierarchy_base_type;
 
   virtual ~ObjectTransformation() {}
   //! Transform point 

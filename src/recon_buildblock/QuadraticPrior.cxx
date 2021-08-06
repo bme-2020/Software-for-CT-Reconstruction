@@ -4,7 +4,15 @@
     Copyright (C) 2000- 2011, Hammersmith Imanet Ltd
     This file is part of STIR.
 
-    SPDX-License-Identifier: Apache-2.0
+    This file is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
+    (at your option) any later version.
+
+    This file is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
     See STIR/LICENSE.txt for details
 */
@@ -580,16 +588,6 @@ Succeeded
 QuadraticPrior<elemT>::
 add_multiplication_with_approximate_Hessian(DiscretisedDensity<3,elemT>& output,
                                             const DiscretisedDensity<3,elemT>& input) const
-{
-  return accumulate_Hessian_times_input(output, input, input);
-}
-
-template <typename elemT>
-Succeeded
-QuadraticPrior<elemT>::
-accumulate_Hessian_times_input(DiscretisedDensity<3,elemT>& output,
-                               const DiscretisedDensity<3,elemT>& /*current_estimate*/,
-                               const DiscretisedDensity<3,elemT>& input) const
 {
   // TODO this function overlaps enormously with parabolic_surrogate_curvature
   // the only difference is that parabolic_surrogate_curvature uses input==1

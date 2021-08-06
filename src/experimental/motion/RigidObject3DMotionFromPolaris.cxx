@@ -85,10 +85,10 @@ static const CartesianCoordinate3D<float> invalid_translation(1.E9F,2.E9F,3.E9F)
    This not so obvious as it sounds as there is a potential sign here. 
    For instance, the Polaris convention uses a quaternion 
    <code>(0,x,y,z)</code> for a point,
-   while \c RigidObject3DTransformation uses <code>(0,z,y,x)</code> 
+   while RigidObject3DTransformation uses </code>(0,z,y,x)</code> 
    (see the point2quat function in RigidObject3DTransformation.cxx ).
    So, effectively there are 2 coordinate swaps between Polaris conventions and 
-   \c RigidObject3DTransformation:
+   RigidObject3DTransformation:
    \code
    Quaternion<float>(q0,qZ,qY,qX) = Quaternion<float>(q0,qz,qx,qy)
    \endcode

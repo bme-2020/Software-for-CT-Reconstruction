@@ -3,7 +3,15 @@
     Copyright (c) 2013, University College London
     This file is part of STIR.
 
-    SPDX-License-Identifier: Apache-2.0
+    This file is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
+    (at your option) any later version.
+
+    This file is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
     See STIR/LICENSE.txt for details
 
@@ -560,12 +568,12 @@ void fill_ang ( angle_type *ang )
 		ang[ i ].cos = cos( deg * dg2rd );						// cosinus of the angle
 		ang[ i ].sin = sin( deg * dg2rd );						// sinus of the angle
 		
-		//... first octave (0->45degrees) equivalent angle and its trigonometric ratios .......
+		//... first octane (0->45º) equivalent angle and its trigonometric ratios .......
 		
 		float angR = fabs( deg );
 		int   quad = (int) floor( angR / (float)90. );			 // quadrant 
 		
-		angR = fabs( angR - (float)90. * (float)quad );			 // reduced angle: equivalent angle in 0->45degrees interval
+		angR = fabs( angR - (float)90. * (float)quad );			 // reduced angle: equivalent angle in 0->45º interval
 		if ( angR > (float)45. ) angR = fabs( (float)90. - angR );   
 	
 		float sinR = (float)sin( angR * dg2rd );		// sinus of the reduced angle

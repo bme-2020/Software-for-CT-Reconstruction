@@ -17,7 +17,15 @@
     Copyright (C) 2000- 2009, Hammersmith Imanet Ltd
     This file is part of STIR.
 
-    SPDX-License-Identifier: Apache-2.0 AND License-ref-PARAPET-license
+    This file is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
+    (at your option) any later version.
+
+    This file is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
     See STIR/LICENSE.txt for details
 */
@@ -30,7 +38,7 @@ Bin::Bin()
 
 Bin::Bin(int segment_num,int view_num, int axial_pos_num,int tangential_pos_num,float bin_value)
 	 :segment(segment_num),view(view_num),
-	 axial_pos(axial_pos_num),tangential_pos(tangential_pos_num),bin_value(bin_value),time_frame(1)
+	 axial_pos(axial_pos_num),tangential_pos(tangential_pos_num),bin_value(bin_value)
      {}
 
      
@@ -50,10 +58,6 @@ int
  Bin::view_num() const
 { return view;}
 
-int
- Bin:: time_frame_num() const
-{return time_frame;}
-
 int&
  Bin::axial_pos_num()
 { return axial_pos;}
@@ -69,10 +73,6 @@ int&
 int&
  Bin:: view_num() 
 { return view;}
-
-int&
- Bin:: time_frame_num()
-{return time_frame;}
 
 #if 0
 const ProjDataInfo *

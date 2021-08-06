@@ -5,12 +5,13 @@
 
   \file
   \ingroup recontest
-  \brief Testing program for forward projection
+  \brief Testing programme for forward projection
 
   \author Kris Thielemans
+  \author PARAPET project
 
 
-  This program allows forward projection of a few segments/views
+  This programme allows forward projection of a few segments/views
   only, or of the full data set. 
 
   Usage:
@@ -23,8 +24,8 @@
   characteristics.        
 */
 /*
+    Copyright (C) 2000 PARAPET partners
     Copyright (C) 2000- 2003, IRSL
-    SPDX-License-Identifier: Apache-2.0
     See STIR/LICENSE.txt for details
 */
 

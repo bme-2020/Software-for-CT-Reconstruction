@@ -4,7 +4,15 @@
     Copyright (C) 2013, University College London
     This file is part of STIR.
 
-    SPDX-License-Identifier: Apache-2.0
+    This file is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
+    (at your option) any later version.
+
+    This file is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
     See STIR/LICENSE.txt for details
 */
@@ -127,37 +135,6 @@ public:
 	}
     }
 };
-
-//! Copy all bins to a range specified by an iterator
-/*! 
-  \ingroup copy_fill
-  \return \a iter advanced over the range (as std::copy)
-  
-  \warning there is no range-check on \a iter
-*/
-
-template<>
-struct CopyFill<DynamicProjData>
-{ template < typename iterT>
-    static
-    iterT copy_to(const DynamicProjData& stir_object, iterT iter)
-{
-  //std::cerr<<"Using DynamicProjData::copy_to\n";
-  return stir_object.copy_to(iter);
-}
-};
-
-//! set all elements of a MultipleProjData  from an iterator
-/*!  
-  \ingroup copy_fill
-  Implementation that resorts to MultipleProjData::fill_from
-  \warning there is no size/range-check on \a iter
-*/
-template < typename iterT>
-void fill_from(DynamicProjData& stir_object, iterT iter, iterT /*iter_end*/)
-{
-  return stir_object.fill_from(iter);
-}
 
 END_NAMESPACE_STIR
 #endif

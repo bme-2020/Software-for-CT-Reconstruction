@@ -198,7 +198,6 @@ BinNormalisationFromECAT7::
 post_processing()
 {
   read_norm_data(normalisation_ECAT7_filename);
-  this->set_calibration_factor(1);
   return false;
 }
 
@@ -442,9 +441,6 @@ read_norm_data(const std::string& filename)
   display(efficiency_factors, "eff");
   display(crystal_interference_factors, "crystal_interference_factors");
 #endif
-
-  if (use_dead_time())
-    warning("BinNormalisationFromECAT7: dead-time code might give wrong results");
 }
 
 bool 
@@ -478,10 +474,8 @@ use_crystal_interference_factors() const
 #if 1
 float 
 BinNormalisationFromECAT7::
-get_uncalibrated_bin_efficiency(const Bin& bin) const {
-    
-    const float start_time=get_exam_info_sptr()->get_time_frame_definitions().get_start_time();
-    const float end_time=get_exam_info_sptr()->get_time_frame_definitions().get_end_time();
+get_bin_efficiency(const Bin& bin, const double start_time, const double end_time) const {
+
 
   // TODO disable when not HR+ or HR++
   /*
@@ -589,8 +583,8 @@ get_uncalibrated_bin_efficiency(const Bin& bin) const {
 	if (this->use_dead_time())
 	  {
 	    lor_efficiency_this_pair *=
-	      get_dead_time_efficiency(pos1) * 
-	      get_dead_time_efficiency(pos2);
+	      get_dead_time_efficiency(pos1, start_time, end_time) * 
+	      get_dead_time_efficiency(pos2, start_time, end_time);
 	  }
 	if (this->use_geometric_factors())
 	  {
@@ -641,11 +635,10 @@ get_uncalibrated_bin_efficiency(const Bin& bin) const {
 
 
 float 
-BinNormalisationFromECAT7::get_dead_time_efficiency (const DetectionPosition<>& det_pos) const
+BinNormalisationFromECAT7::get_dead_time_efficiency (const DetectionPosition<>& det_pos,
+						    const double start_time,
+						    const double end_time) const
 {
-    const float start_time=get_exam_info_sptr()->get_time_frame_definitions().get_start_time();
-    const float end_time=get_exam_info_sptr()->get_time_frame_definitions().get_end_time();
-    
   if (is_null_ptr(singles_rates_ptr)) {
     return 1;
   }
@@ -653,8 +646,7 @@ BinNormalisationFromECAT7::get_dead_time_efficiency (const DetectionPosition<>& 
   // Get singles rate per block (rate per singles unit / blocks per singles unit).
   const float rate = singles_rates_ptr->get_singles_rate(det_pos, start_time, end_time) / 
     num_blocks_per_singles_unit;
-
-  // TODO KT is not sure if the rate (currently returned in s^-1) has the appropriate units for the equation below
+  
   return
     ( 1.0F + axial_t1_array[ det_pos.axial_coord()/num_axial_blocks_per_singles_unit] * rate + 
       axial_t2_array[ det_pos.axial_coord()/num_axial_blocks_per_singles_unit] * rate * rate );

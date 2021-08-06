@@ -1,8 +1,9 @@
 /* DetectorCoordinateMapFromFile.h
  Read List-Mode Event Data using map from file: Header File
+ Jannis Fischer
+ jannis.fischer@cern.ch
 
 	Copyright 2015 ETH Zurich, Institute of Particle Physics
-	Copyright 2020 Positrigo AG, Zurich
 
 	Licensed under the Apache License, Version 2.0 (the "License");
 	you may not use this file except in compliance with the License.
@@ -29,7 +30,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
-#include <random>
+
 #include <boost/algorithm/string.hpp>
 #include <boost/unordered_map.hpp>
 
@@ -51,9 +52,7 @@ class DetectorCoordinateMapFromFile
 {
 public:
 	//! Constructor calls read_detectormap_from_file( filename ).
-	DetectorCoordinateMapFromFile(const std::string& filename, double sigma = 0.0) :
-		sigma(sigma),
-		distribution(0.0, sigma)
+	DetectorCoordinateMapFromFile(const std::string& filename)
 		{ read_detectormap_from_file( filename ); }
 
 	//! Reads map from file and stores it.
@@ -61,13 +60,7 @@ public:
 
 	//! Returns a cartesian coordinate given a detection position.
 	stir::CartesianCoordinate3D<float> get_detector_coordinate( const stir::DetectionPosition<>& det_pos )
-	{ 
-		auto coord = coord_map.at(det_pos); 
-		coord.x() += distribution(generator);
-		coord.y() += distribution(generator);
-		coord.z() += distribution(generator);
-		return coord;
-	}
+		{ return coord_map.at(det_pos); }
 
 private:
 	struct ihash
@@ -84,9 +77,6 @@ private:
 	};
 
 	boost::unordered_map< stir::DetectionPosition<>, stir::CartesianCoordinate3D<float>, ihash > coord_map;
-	const double sigma;
-	std::default_random_engine generator;
-	std::normal_distribution<double> distribution;
 };
 
 END_NAMESPACE_STIR

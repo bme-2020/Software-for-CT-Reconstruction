@@ -3,7 +3,15 @@
   Copyright (C) 2018-2019, University of Hull
   This file is part of STIR.
 
-  SPDX-License-Identifier: Apache-2.0
+  This file is free software; you can redistribute it and/or modify
+  it under the terms of the GNU Lesser General Public License as published by
+  the Free Software Foundation; either version 2.1 of the License, or
+  (at your option) any later version.
+
+  This file is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU Lesser General Public License for more details.
 
   See STIR/LICENSE.txt for details
 */
@@ -16,8 +24,6 @@
   \author Kris Thielemans
 */
 #include "stir/scatter/ScatterEstimation.h"
-#include "stir/scatter/SingleScatterSimulation.h"
-#include "stir/recon_buildblock/ChainedBinNormalisation.h"
 #include "stir/ProjDataInterfile.h"
 #include "stir/ProjDataInMemory.h"
 #include "stir/ExamInfo.h"
@@ -28,7 +34,6 @@
 #include "stir/DataProcessor.h"
 #include "stir/PostFiltering.h"
 #include "stir/scatter/CreateTailMaskFromACFs.h"
-#include "stir/SeparableGaussianImageFilter.h"
 #include "stir/zoom.h"
 #include "stir/ZoomOptions.h"
 #include "stir/IO/write_to_file.h"
@@ -52,20 +57,11 @@ void
 ScatterEstimation::
 set_defaults()
 {
-    this->_already_setup = false;
-    this->scatter_simulation_sptr.reset(new SingleScatterSimulation);
     this->recompute_atten_projdata = true;
     this->recompute_mask_image = true;
-    {
-      // image masking
-      this->masking_parameters.min_threshold = .003F;
-      shared_ptr<SeparableGaussianImageFilter<float> > filter_sptr(new SeparableGaussianImageFilter<float>);
-      filter_sptr->set_fwhms(make_coordinate(15.F, 20.F, 20.F));
-      this->masking_parameters.filter_sptr.reset(new PostFiltering<DiscretisedDensity < 3, float > >);
-      this->masking_parameters.filter_sptr->set_filter_sptr(filter_sptr);
-    }
+    this->masking_parameters.min_threshold = .003F;
+    this->masking_parameters.filter_sptr.reset();
     this->recompute_mask_projdata = true;
-    this->run_in_2d_projdata = true;
     this->do_average_at_2 = true;
     this->export_scatter_estimates_of_each_iteration = false;
     this->run_debug_mode = false;
@@ -74,9 +70,7 @@ set_defaults()
     this->downsample_scanner_bool = true;
     this->remove_interleaving = true;
     this->atten_image_filename = "";
-    this->atten_coeff_filename = "";
-    this->norm_3d_sptr.reset();
-    this->multiplicative_binnorm_sptr.reset();
+    this->norm_coeff_filename = "";
     this->output_scatter_estimate_prefix = "";
     this->output_additive_estimate_prefix = "";
     this->num_scatter_iterations = 5;
@@ -117,10 +111,6 @@ initialise_keymap()
     // END MASK
     this->parser.add_key("background projdata filename",
                          &this->back_projdata_filename);
-    this->parser.add_parsing_key("Normalisation type",
-                         &this->norm_3d_sptr);
-    this->parser.add_key("attenuation correction factors filename",
-                         &this->atten_coeff_filename);
     this->parser.add_parsing_key("Bin Normalisation type",
                          &this->multiplicative_binnorm_sptr);
 
@@ -188,15 +178,25 @@ bool
 ScatterEstimation::
 post_processing()
 {
-    if (!this->input_projdata_filename.empty())
-      {
-        info("ScatterEstimation: Loading input projdata...", 3);
-        this->input_projdata_sptr =
-          ProjData::read_from_file(this->input_projdata_filename);
-      }
+    // Check that the crucial parts have been set.
+    info("ScatterEstimation: Loading input projection data");
+    if (this->input_projdata_filename.size() == 0)
+    {
+        warning("ScatterEstimation: No input projdata filename is given. Aborting.");
+        return true;
+    }
+
+    this->input_projdata_sptr =
+            ProjData::read_from_file(this->input_projdata_filename);
+
     // If the reconstruction_template_sptr is null then, we need to parse it from another
     // file. I prefer this implementation since makes smaller modular files.
-    if (!this->recon_template_par_filename.empty())
+    if (this->recon_template_par_filename.size() == 0)
+    {
+      if (is_null_ptr(reconstruction_template_sptr))
+        error("ScatterEstimation: Please define a reconstruction type.");
+    }
+    else
     {
         KeyParser local_parser;
         local_parser.add_start_key("Reconstruction Parameters");
@@ -210,32 +210,26 @@ post_processing()
         }
     }
 
-    if (!this->atten_image_filename.empty())
-      {
-        info("ScatterEstimation: Loading attenuation image...", 3);
+    info("ScatterEstimation: Loading attenuation image...");
+    if (this->atten_image_filename.size() == 0)
+    {
+        warning("ScatterEstimation: Please define an attenuation image. Aborting.");
+        return true;
+    }
+    else
         this->atten_image_sptr =
-          read_from_file<DiscretisedDensity<3,float> >(this->atten_image_filename);
-      }
-    if (!this->atten_coeff_filename.empty())
-      {
-        info("ScatterEstimation: Loading attenuation coefficients projdata...", 3);
-        shared_ptr<ProjData> atten_coef_sptr =
-          ProjData::read_from_file(this->atten_coeff_filename);
-        this->set_attenuation_correction_proj_data_sptr(atten_coef_sptr);
-      }
-    if(!is_null_ptr(multiplicative_binnorm_sptr))
-      {
-        warning("ScatterEstimation: looks like you set a combined norm via the 'bin normalisation type' keyword\n"
-                "This is deprecated and will be removed in a future version (5.0?).\n"
-                "Use 'normalisation type' (for the norm factors) and 'attenuation correction factors filename' instead.");
-      }
+            read_from_file<DiscretisedDensity<3,float> >(this->atten_image_filename);
 
-    if (!this->back_projdata_filename.empty())
-      {
-        info("ScatterEstimation: Loading background projdata...", 3);
+    if(is_null_ptr(multiplicative_binnorm_sptr))
+        warning("ScatterEstimation: No multiplicative coefficients have been set!!\n\
+                At least attenuation has to be set!");
+
+    if (this->back_projdata_filename.size() > 0)
+    {
+        info("ScatterEstimation: Loading background projdata...");
         this->back_projdata_sptr =
-          ProjData::read_from_file(this->back_projdata_filename);
-      }
+                ProjData::read_from_file(this->back_projdata_filename);
+    }
 
     //    if(!this->recompute_initial_activity_image ) // This image can be used as a template
     //    {
@@ -263,41 +257,60 @@ post_processing()
         }
     }
 
-    if (!this->scatter_sim_par_filename.empty())
-      {
-        info ("ScatterEstimation: Initialising Scatter Simulation ...", 3);
-        // Parse locally
+    info ("ScatterEstimation: Initialising Scatter Simulation ... ");
+    if (this->scatter_sim_par_filename.size() == 0)
+    {
+      if (is_null_ptr(this->scatter_simulation_sptr))
+        error("ScatterEstimation: Please define a scatter simulation method. Aborting.");
+    }
+    else // Parse locally
+    {
+        KeyParser local_parser;
+        local_parser.add_start_key("Scatter Simulation Parameters");
+        local_parser.add_stop_key("End Scatter Simulation Parameters");
+        local_parser.add_parsing_key("Scatter Simulation type", &this->scatter_simulation_sptr);
+        if (!local_parser.parse(this->scatter_sim_par_filename.c_str()))
         {
-          KeyParser local_parser;
-          local_parser.add_start_key("Scatter Simulation Parameters");
-          local_parser.add_stop_key("End Scatter Simulation Parameters");
-          local_parser.add_parsing_key("Scatter Simulation type", &this->scatter_simulation_sptr);
-          if (!local_parser.parse(this->scatter_sim_par_filename.c_str()))
-            error("ScatterEstimation: Error parsing scatter simulation parameters.");
+            warning(boost::format("ScatterEstimation: Error parsing scatter simulation parameters file %1%. Aborting.")
+                    %this->recon_template_par_filename);
+            return true;
         }
-      }
+    }
 
     // There is no output in this case
-    if (this->output_scatter_estimate_prefix.empty() && this->output_additive_estimate_prefix.empty())
-      {
-        // This is ok when running from Python or so, but not when running from the command line.
-        // As we don't know, we just write a warning
-        warning("ScatterEstimation: no filename prefix set for either the scatter estimate or the additive.\n"
-                "This is probably not what you want.");
-      }
+    if (this->output_scatter_estimate_prefix.size() == 0 && this->output_additive_estimate_prefix.size() == 0)
+        return true;
 
     if(!this->recompute_mask_projdata)
-      {
-        if (!this->mask_projdata_filename.empty())
-          this->mask_projdata_sptr =
-            ProjData::read_from_file(this->mask_projdata_filename);
-      }
+    {
+        if (this->mask_projdata_filename.size() == 0)
+        {
+            warning("ScatterEstimation: Please define a filename for mask proj_data. Aborting.");
+            return true;
+        }
+        this->mask_projdata_sptr =
+                ProjData::read_from_file(this->mask_projdata_filename);
+    }
     else
-      {
-        if (!this->recompute_mask_image && !this->mask_image_filename.empty())
-          this->mask_image_sptr =
-            read_from_file<DiscretisedDensity<3, float> >(this->mask_image_filename);
-      }
+    {
+        if (!this->recompute_mask_image)
+        {
+            if (this->mask_image_filename.size() == 0 )
+            {
+                warning("ScatterEstimation: Please define a filename for mask image. Aborting.");
+                return true;
+            }
+
+            this->mask_image_sptr =
+                    read_from_file<DiscretisedDensity<3, float> >(this->mask_image_filename);
+        }
+
+        if (this->tail_mask_par_filename.size() == 0)
+        {
+            warning("ScatterEstimation: Please define a filename for tails mask. Aborting.");
+            return true;
+        }
+    }
 
     return false;
 }
@@ -306,68 +319,6 @@ shared_ptr<ProjData>
 ScatterEstimation::get_output() const
 {
     return scatter_estimate_sptr;
-}
-
-#if STIR_VERSION < 050000
-void ScatterEstimation::set_input_data(const shared_ptr<ProjData>& data)
-{
-  this->set_input_proj_data_sptr(data);
-}
-#else
-void ScatterEstimation::set_input_data(const shared_ptr<ExamData>& data)
-{
-  // C++-11
-  auto sptr = std::dynamic_pointer_cast<ProjData>(data);
-  if (!sptr)
-    error("ScatterEstimation can only accept ProjData at the moment");
-
-  this->set_input_proj_data_sptr(sptr);
-}
-#endif
-
-shared_ptr<const ProjData> ScatterEstimation::get_input_data() const
-{
-  return this->input_projdata_sptr;
-}
-
-shared_ptr<const DiscretisedDensity<3,float> >
-ScatterEstimation::get_estimated_activity_image_sptr() const
-{
-  return this->current_activity_image_sptr;
-}
-
-void ScatterEstimation::set_output_scatter_estimate_prefix(const std::string& arg)
-{
-  this->output_scatter_estimate_prefix = arg;
-}
-
-void ScatterEstimation::set_export_scatter_estimates_of_each_iteration(bool arg)
-{
-  this->export_scatter_estimates_of_each_iteration = arg;
-}
-
-
-void
-ScatterEstimation::
-set_attenuation_correction_proj_data_sptr(const shared_ptr<ProjData> arg)
-{
-  this->_already_setup = false;
-  this->atten_norm_3d_sptr.reset(new BinNormalisationFromProjData(arg));
-  this->multiplicative_binnorm_sptr.reset();
-}
-
-void
-ScatterEstimation::
-set_normalisation_sptr(const shared_ptr<BinNormalisation> arg)
-{
-  this->_already_setup = false;
-  this->norm_3d_sptr = arg;
-  this->multiplicative_binnorm_sptr.reset();
-}
-
-bool ScatterEstimation::already_setup() const
-{
-  return this->_already_setup;
 }
 
 Succeeded
@@ -384,36 +335,18 @@ set_up()
         extras_path = current_full_path.append("extras");
     }
 
-    if (is_null_ptr(this->atten_image_sptr))
-      error("ScatterEstimation: No attenuation image has been set. Aborting.");
+    this->multiplicative_binnorm_sptr->set_up(this->input_projdata_sptr->get_proj_data_info_sptr());
 
     if (is_null_ptr(this->input_projdata_sptr))
-      error("ScatterEstimation: No input proj_data have been set. Aborting.");
-
-    if (is_null_ptr(this->scatter_simulation_sptr))
-      error("ScatterEstimation: Please define a scatter simulation method. Aborting.");
+    {
+        warning("ScatterEstimation: No input proj_data have been set. Aborting.");
+        return Succeeded::no;
+    }
 
     if (!run_in_2d_projdata)
-      error("ScatterEstimation: Currently, only running the estimation in 2D is supported.");
-
-    if(!this->recompute_mask_projdata)
-      {
-        if (is_null_ptr(this->mask_projdata_sptr))
-          error("ScatterEstimation: Please set mask proj_data (or enable computing it)");
-      }
-    else if (!this->recompute_mask_image)
-      {
-        if (is_null_ptr(this->mask_image_sptr))
-          error("ScatterEstimation: Please set a mask image (or enable computing it)");
-      }
-
-   if (this->_already_setup)
-      return Succeeded::yes;
-
-   info("Scatter Estimation Parameters (objects that are not set by parsing will not be listed correctly)\n" + this->parameter_info() + "\n\n", 1);
-
-    this->create_multiplicative_binnorm_sptr();
-    this->multiplicative_binnorm_sptr->set_up(this->input_projdata_sptr->get_exam_info_sptr(), this->input_projdata_sptr->get_proj_data_info_sptr());
+    {
+        error("ScatterEstimation: Currently, only runing the estimation in 2D is supported.");
+    }
 
 #if 1
     // Calculate the SSRB
@@ -492,6 +425,12 @@ set_up()
     //
 
     info("ScatterEstimation: Setting up Scatter Simulation method ...");
+    if(is_null_ptr(this->scatter_simulation_sptr))
+    {
+        warning("Scatter simulation method has not been initialised. Aborting.");
+        return Succeeded::no;
+    }
+
     // The images are passed to the simulation.
     // and it will override anything that the ScatterSimulation.par file has done.
     if(this->override_density_image)
@@ -550,7 +489,6 @@ set_up()
         }
     }
 
-    this->_already_setup = true;
     info("ScatterEstimation: >>>>Set up finished successfully!!<<<<");
     return Succeeded::yes;
 }
@@ -568,15 +506,39 @@ set_up_iterative(shared_ptr<IterativeReconstruction<DiscretisedDensity<3, float>
     else
         iterative_object->set_input_data(this->input_projdata_sptr);
 
+    bool do_chains = false;
+
+    const double start_time = this->input_projdata_sptr->get_exam_info_sptr()->get_time_frame_definitions().get_start_time();
+    const double end_time =this->input_projdata_sptr->get_exam_info_sptr()->get_time_frame_definitions().get_end_time();
 
 
     //
     // Multiplicative projdata
     //
-    shared_ptr<ProjData> tmp_atten_projdata_sptr =
-      this->get_attenuation_correction_factors_sptr(this->multiplicative_binnorm_sptr);
+
+    shared_ptr<ProjData> tmp_atten_projdata_sptr;
     shared_ptr<ProjData> atten_projdata_2d_sptr;
 
+    // Check if we have Chained Normalisation.
+    // // If it is not, then we assume that we have only attenuation.
+
+    const ChainedBinNormalisation* tmp_chain_multiplicative_binnorm_sptr =
+            dynamic_cast<const ChainedBinNormalisation*>(this->multiplicative_binnorm_sptr.get());
+
+    if (!is_null_ptr(tmp_chain_multiplicative_binnorm_sptr ))
+    {
+        do_chains = true;
+        tmp_atten_projdata_sptr =
+                dynamic_cast<BinNormalisationFromProjData*> (tmp_chain_multiplicative_binnorm_sptr->get_second_norm().get())->get_norm_proj_data_sptr();
+    }
+    else
+    {
+        do_chains = false;
+        tmp_atten_projdata_sptr =
+                dynamic_cast<BinNormalisationFromProjData*> (this->multiplicative_binnorm_sptr.get())->get_norm_proj_data_sptr();
+    }
+
+#if 1
     info("ScatterEstimation: 3.Calculating the attenuation projection data...");
 
     if( tmp_atten_projdata_sptr->get_num_segments() > 1)
@@ -596,68 +558,96 @@ set_up_iterative(shared_ptr<IterativeReconstruction<DiscretisedDensity<3, float>
         // TODO: this needs more work. -- Setting directly 2D proj_data is buggy right now.
         atten_projdata_2d_sptr = tmp_atten_projdata_sptr;
     }
+#else
+    {
+        std::string in_filename = extras_path.get_path() + "tmp_atten_sino_2d.hs";
+        atten_projdata_2d_sptr = ProjData::read_from_file(in_filename);
+    }
+#endif
 
     info("ScatterEstimation: 4.Calculating the normalisation data...");
+    if(!do_chains)
     {
-      if (run_in_2d_projdata)
-        {
-          shared_ptr<BinNormalisation> norm3d_sptr =
-            this->get_normalisation_object_sptr(this->multiplicative_binnorm_sptr);
-          shared_ptr<BinNormalisation> norm_coeff_2d_sptr;
-
-          if ( input_projdata_sptr->get_num_segments() > 1)
-            {
-              // Some BinNormalisation classes don't know about SSRB.
-              // we need to get norm2d=1/SSRB(1/norm3d))
-
-              info("ScatterEstimation: Constructing 2D normalisation coefficients ...");
-
-              std::string out_filename = "tmp_inverted_normdata.hs";
-              shared_ptr<ProjData> inv_projdata_3d_sptr = create_new_proj_data(out_filename,
-                                                                               this->input_projdata_sptr->get_exam_info_sptr(),
-                                                                               this->input_projdata_sptr->get_proj_data_info_sptr()->create_shared_clone());
-              inv_projdata_3d_sptr->fill(1.f);
-
-              out_filename = "tmp_normdata_2d.hs";
-              shared_ptr<ProjData> norm_projdata_2d_sptr = create_new_proj_data(out_filename,
-                                                                                this->input_projdata_2d_sptr->get_exam_info_sptr(),
-                                                                                this->input_projdata_2d_sptr->get_proj_data_info_sptr()->create_shared_clone());
-              norm_projdata_2d_sptr->fill(0.f);
-
-              // Essentially since inv_projData_sptr is 1s then this is an inversion.
-              // inv_projdata_sptr = 1/norm3d
-              norm3d_sptr->undo(*inv_projdata_3d_sptr);
-
-              info("ScatterEstimation: Performing SSRB on efficiency factors ...");
-
-              SSRB(*norm_projdata_2d_sptr,
-                   *inv_projdata_3d_sptr,false);
-
-              // Crucial: Avoid divisions by zero!!
-              // This should be resolved after https://github.com/UCL/STIR/issues/348
-              pow_times_add min_threshold (0.0f, 1.0f, 1.0f,  1E-20f, NumericInfo<float>().max_value());
-              apply_to_proj_data(*norm_projdata_2d_sptr, min_threshold);
-
-              pow_times_add invert (0.0f, 1.0f, -1.0f, NumericInfo<float>().min_value(), NumericInfo<float>().max_value());
-              apply_to_proj_data(*norm_projdata_2d_sptr, invert);
-
-              norm_coeff_2d_sptr.reset(new BinNormalisationFromProjData(norm_projdata_2d_sptr));
-            }
-          else
-            {
-              norm_coeff_2d_sptr = norm3d_sptr;
-            }
-
-          shared_ptr<BinNormalisationFromProjData>atten_coeff_2d_sptr(new BinNormalisationFromProjData(atten_projdata_2d_sptr));
-          this->multiplicative_binnorm_2d_sptr.reset(
-                                                     new ChainedBinNormalisation(norm_coeff_2d_sptr, atten_coeff_2d_sptr));
-
-          this->multiplicative_binnorm_2d_sptr->set_up(this->back_projdata_sptr->get_exam_info_sptr(), this->input_projdata_2d_sptr->get_proj_data_info_sptr()->create_shared_clone());
-          iterative_object->get_objective_function_sptr()->set_normalisation_sptr(multiplicative_binnorm_2d_sptr);
-        }
-      else // run_in_2d_projdata
-        iterative_object->get_objective_function_sptr()->set_normalisation_sptr(multiplicative_binnorm_sptr);
+        multiplicative_binnorm_2d_sptr.reset(new BinNormalisationFromProjData(atten_projdata_2d_sptr));
     }
+#if 1
+    else
+    {
+        if(!tmp_chain_multiplicative_binnorm_sptr->is_first_trivial()) // Check that we have actually something in here
+        {
+
+            shared_ptr<BinNormalisation> norm_coeff_2d_sptr;
+
+            if ( input_projdata_sptr->get_num_segments() > 1)
+            {
+                // Some BinNormalisation classes don't know about SSRB.
+                // we need to get norm2d=1/SSRB(1/norm3d))
+
+                info("ScatterEstimation: Constructing 2D normalisation coefficients ...");
+
+                std::string out_filename = "tmp_inverted_normdata.hs";
+                shared_ptr<ProjData> inv_projdata_3d_sptr = create_new_proj_data(out_filename,
+                                                                                 this->input_projdata_sptr->get_exam_info_sptr(),
+                                                                                 this->input_projdata_sptr->get_proj_data_info_sptr()->create_shared_clone());
+                inv_projdata_3d_sptr->fill(1.f);
+
+                out_filename = "tmp_normdata_2d.hs";
+                shared_ptr<ProjData> norm_projdata_2d_sptr = create_new_proj_data(out_filename,
+                                                                                  this->input_projdata_2d_sptr->get_exam_info_sptr(),
+                                                                                  this->input_projdata_2d_sptr->get_proj_data_info_sptr()->create_shared_clone());
+                norm_projdata_2d_sptr->fill(0.f);
+
+                // Essentially since inv_projData_sptr is 1s then this is an inversion.
+                // inv_projdata_sptr = 1/norm3d
+                tmp_chain_multiplicative_binnorm_sptr->get_first_norm()->undo(*inv_projdata_3d_sptr, start_time, end_time);
+
+                info("ScatterEstimation: Performing SSRB on efficiency factors ...");
+
+                SSRB(*norm_projdata_2d_sptr,
+                     *inv_projdata_3d_sptr,false);
+
+                // Crucial: Avoid divisions by zero!!
+                // This should be resolved after https://github.com/UCL/STIR/issues/348
+                pow_times_add min_threshold (0.0f, 1.0f, 1.0f,  1E-20f, NumericInfo<float>().max_value());
+                apply_to_proj_data(*norm_projdata_2d_sptr, min_threshold);
+
+                pow_times_add invert (0.0f, 1.0f, -1.0f, NumericInfo<float>().min_value(), NumericInfo<float>().max_value());
+                apply_to_proj_data(*norm_projdata_2d_sptr, invert);
+
+                norm_coeff_2d_sptr.reset(new BinNormalisationFromProjData(norm_projdata_2d_sptr));
+            }
+            else
+            {
+	      norm_coeff_2d_sptr = tmp_chain_multiplicative_binnorm_sptr->get_first_norm();
+            }
+
+            shared_ptr<BinNormalisationFromProjData>atten_coeff_2d_sptr(new BinNormalisationFromProjData(atten_projdata_2d_sptr));
+            this->multiplicative_binnorm_2d_sptr.reset(
+                        new ChainedBinNormalisation(norm_coeff_2d_sptr, atten_coeff_2d_sptr));
+        }
+
+    }
+#else
+    else
+    {
+        shared_ptr<BinNormalisationFromProjData>atten_coeff_2d_sptr(new BinNormalisationFromProjData(atten_projdata_2d_sptr));
+
+        std::string in_filename = extras_path.get_path() + "tmp_projdata_2d.hs";
+        shared_ptr<ProjData>tmp_projdata_2d_sptr = ProjData::read_from_file(in_filename);
+        shared_ptr<BinNormalisationFromProjData>norm_coeff_2d_sptr(new BinNormalisationFromProjData(tmp_projdata_2d_sptr));
+
+        this->multiplicative_binnorm_2d_sptr.reset(
+                    new ChainedBinNormalisation(norm_coeff_2d_sptr, atten_coeff_2d_sptr));
+    }
+#endif
+    if (run_in_2d_projdata)
+    {
+	this->multiplicative_binnorm_2d_sptr->set_up(this->input_projdata_2d_sptr->get_proj_data_info_sptr()->create_shared_clone());
+        iterative_object->get_objective_function_sptr()->set_normalisation_sptr(multiplicative_binnorm_2d_sptr);
+    }
+    else
+        iterative_object->get_objective_function_sptr()->set_normalisation_sptr(multiplicative_binnorm_sptr);
+
     info("ScatterEstimation: Done normalisation coefficients.");
 
     //
@@ -717,7 +707,7 @@ set_up_iterative(shared_ptr<IterativeReconstruction<DiscretisedDensity<3, float>
                                                     this->input_projdata_2d_sptr->get_exam_info_sptr(),
                                                     this->input_projdata_2d_sptr->get_proj_data_info_sptr()->create_shared_clone());
         add_projdata_2d_sptr->fill(*back_projdata_2d_sptr);
-        this->multiplicative_binnorm_2d_sptr->apply(*this->add_projdata_2d_sptr);
+        this->multiplicative_binnorm_2d_sptr->apply(*this->add_projdata_2d_sptr, start_time, end_time);
 
         iterative_object->get_objective_function_sptr()->set_additive_proj_data_sptr(this->add_projdata_2d_sptr);
 
@@ -737,7 +727,7 @@ set_up_iterative(shared_ptr<IterativeReconstruction<DiscretisedDensity<3, float>
                                                  this->input_projdata_sptr->get_exam_info_sptr(),
                                                  this->input_projdata_sptr->get_proj_data_info_sptr()->create_shared_clone());
         add_projdata_sptr->fill(*back_projdata_sptr);
-        this->multiplicative_binnorm_sptr->apply(*this->add_projdata_sptr);
+        this->multiplicative_binnorm_sptr->apply(*this->add_projdata_sptr, start_time, end_time);
 
         iterative_object->get_objective_function_sptr()->set_additive_proj_data_sptr(this->add_projdata_sptr);
 
@@ -766,8 +756,14 @@ ScatterEstimation::
 process_data()
 {
 
-  if (!this->_already_setup)
-    error("ScatterEstimation: set_up needs to be called before process_data()");
+    if (this->set_up() == Succeeded::no)
+    {
+        info("ScatterEstimation: Unsuccessful set up!");
+       return Succeeded::no;
+    }
+
+    const double start_time = this->input_projdata_sptr->get_exam_info_sptr()->get_time_frame_definitions().get_start_time();
+    const double end_time =this->input_projdata_sptr->get_exam_info_sptr()->get_time_frame_definitions().get_end_time();
 
     float local_min_scale_value = 0.5f;
     float local_max_scale_value = 0.5f;
@@ -941,7 +937,7 @@ process_data()
                 apply_to_proj_data(*temp_projdata, min_threshold_zero);
 
                 // ok, we can multiply with the norm
-                normalisation_factors_sptr->apply(*temp_projdata);
+                normalisation_factors_sptr->apply(*temp_projdata, start_time, end_time);
 
 		// Create proj_data to save the 3d scatter estimate
                 if(!this->output_scatter_estimate_prefix.empty())
@@ -1005,7 +1001,7 @@ process_data()
 		    add_proj_data(*temp_additive_projdata, *this->back_projdata_sptr);
 		  }
 
-		this->multiplicative_binnorm_sptr->apply(*temp_additive_projdata);
+		this->multiplicative_binnorm_sptr->apply(*temp_additive_projdata, start_time, end_time);
 	    }
         }
 
@@ -1020,7 +1016,7 @@ process_data()
             {
                 add_proj_data(*add_projdata_2d_sptr, *this->back_projdata_2d_sptr);
             }
-            this->multiplicative_binnorm_2d_sptr->apply(*add_projdata_2d_sptr);
+            this->multiplicative_binnorm_2d_sptr->apply(*add_projdata_2d_sptr, start_time, end_time);
         }
         else
         {
@@ -1260,18 +1256,15 @@ ScatterEstimation::project_mask_image()
 
     CreateTailMaskFromACFs create_tail_mask_from_acfs;
 
-    if(this->tail_mask_par_filename.empty())
+    if(!create_tail_mask_from_acfs.parse(this->tail_mask_par_filename.c_str()))
     {
+        warning(boost::format("Error parsing parameters file %1%, for creating mask tails from ACFs. Setting up to default.")
+                %this->tail_mask_par_filename);
+        //return Succeeded::no;
         create_tail_mask_from_acfs.ACF_threshold = 1.1;
         create_tail_mask_from_acfs.safety_margin = 4;
     }
-    else
-    {
-        if(!create_tail_mask_from_acfs.parse(this->tail_mask_par_filename.c_str()))
-            error(boost::format("Error parsing parameters file %1%, for creating mask tails from ACFs.")
-                 %this->tail_mask_par_filename);
-    }
-    
+
     create_tail_mask_from_acfs.set_input_projdata_sptr(mask_projdata);
     create_tail_mask_from_acfs.set_output_projdata_sptr(this->mask_projdata_sptr);
     return create_tail_mask_from_acfs.process_data();
@@ -1297,47 +1290,13 @@ apply_mask_in_place(DiscretisedDensity<3, float>& arg,
     }
 }
 
-int ScatterEstimation::get_num_iterations() const
-{
-    return num_scatter_iterations;
-}
-
-// deprecated version
 int ScatterEstimation::get_iterations_num() const
 {
     return num_scatter_iterations;
 }
 
-void
-ScatterEstimation::create_multiplicative_binnorm_sptr()
-{
-  if (!is_null_ptr(this->multiplicative_binnorm_sptr))
-    {
-      if (!is_null_ptr(this->norm_3d_sptr))
-        error("ScatterEstimation: cannot handle having both norm and 'combined norm' initialised");
-      if (!is_null_ptr(this->atten_norm_3d_sptr))
-        error("ScatterEstimation: cannot handle having both attenuation and 'combined norm' initialised");
-    }
-  else
-    {
-      if (is_null_ptr(this->atten_norm_3d_sptr))
-        {
-          error("ScatterEstimation: need attenuation correction factors to be set (sorry)");
-        }
-      if (is_null_ptr(this->norm_3d_sptr))
-        {
-          warning("ScatterEstimation: no normalisation data set. This would only be appropriate for simple simulations.");
-          this->norm_3d_sptr = this->atten_norm_3d_sptr;
-        }
-      else
-        {
-          this->multiplicative_binnorm_sptr.reset(new ChainedBinNormalisation(norm_3d_sptr, atten_norm_3d_sptr));
-        }
-    }
-}
-
 shared_ptr<BinNormalisation>
-ScatterEstimation::get_normalisation_object_sptr(const shared_ptr<BinNormalisation>& combined_norm_sptr) const
+ScatterEstimation::get_normalisation_object_sptr(const shared_ptr<BinNormalisation>& combined_norm_sptr)
 {
     const ChainedBinNormalisation* tmp_chain_norm_sptr =
       dynamic_cast<const ChainedBinNormalisation*>(combined_norm_sptr.get());
@@ -1349,29 +1308,9 @@ ScatterEstimation::get_normalisation_object_sptr(const shared_ptr<BinNormalisati
     else //Just trivial, then ..
     {
         shared_ptr<BinNormalisation> normalisation_factors_sptr(new TrivialBinNormalisation());
-        normalisation_factors_sptr->set_up(this->input_projdata_sptr->get_exam_info_sptr(), this->input_projdata_sptr->get_proj_data_info_sptr());
+        normalisation_factors_sptr->set_up(this->input_projdata_sptr->get_proj_data_info_sptr());
 	return normalisation_factors_sptr;
     }
-}
-
-shared_ptr<ProjData>
-ScatterEstimation::get_attenuation_correction_factors_sptr(const shared_ptr<BinNormalisation>& combined_norm_sptr) const
-{
-  const ChainedBinNormalisation* tmp_chain_norm_sptr =
-    dynamic_cast<const ChainedBinNormalisation*>(combined_norm_sptr.get());
-  shared_ptr<BinNormalisation> atten_norm_sptr;
-  if (!is_null_ptr(tmp_chain_norm_sptr ))
-    {
-      atten_norm_sptr = tmp_chain_norm_sptr->get_second_norm();
-    }
-  else
-    {
-      atten_norm_sptr = combined_norm_sptr;
-    }
-
-  return
-    dynamic_cast<BinNormalisationFromProjData*> (atten_norm_sptr.get())->get_norm_proj_data_sptr();
-
 }
 
 shared_ptr<ProjData> ScatterEstimation::create_new_proj_data(const std::string& filename,

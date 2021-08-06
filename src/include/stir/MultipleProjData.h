@@ -1,10 +1,18 @@
 /*
     Copyright (C) 2005 - 2007-10-08, Hammersmith Imanet Ltd
     Copyright (C) 2013, Kris Thielemans
-    Copyright (C) 2013, 2016-2020 University College London
+    Copyright (C) 2013, University College London
     This file is part of STIR.
 
-    SPDX-License-Identifier: Apache-2.0
+    This file is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
+    (at your option) any later version.
+
+    This file is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
     See STIR/LICENSE.txt for details
 */
@@ -22,7 +30,6 @@
 #include "stir/shared_ptr.h"
 #include "stir/Array.h"
 #include "stir/is_null_ptr.h"
-#include "stir/copy_fill.h"
 //#include "stir/Scanner.h"
 #include <vector>
 
@@ -141,44 +148,50 @@ public:
 
   //!
   //! \brief copy_to
-  //! \param array_iter an iterator to an array or other object (which has to be pre-allocated)
-  //! \details Copy all data by incrementing \c array_iter.
+  //! \param full_iterator of some array
+  //! \details Copy all data to an array.
   //! \author Nikos Efthimiou
+  //! \warning Full::iterator should be supplied.
   template < typename iterT>
-  iterT copy_to(iterT array_iter) const
+  void copy_to(iterT array_iter)
   {
-    for ( std::vector<shared_ptr<ProjData> >::const_iterator it = _proj_datas.begin();
+      for ( std::vector<shared_ptr<ProjData> >::iterator it = _proj_datas.begin();
             it != _proj_datas.end(); ++it)
       {
           if ( is_null_ptr( *(it)))
-              error("Dynamic/gated ProjData have not been properly allocated. Abort.");
+              error("Dynamic ProjData have not been properly allocated.Abort.");
 
-          array_iter = stir::copy_to(*(*it), array_iter);
+          const std::size_t num_bins = (*it)->copy_to(array_iter);
+          std::advance(array_iter, num_bins);
       }
-      return array_iter;
   }
 
   //!
   //! \brief fill_from
-  //! \param array_iter output iterator, e.g. of some array
-  //! \details Fills all ProjData from the iterator (which has to fit the size)
+  //! \param full_iterator of some array
+  //! \details Fills all ProjData from a 2D array.
   //! \author Nikos Efthimiou
+  //! \warning Full::iterator should be supplied.
   template <typename iterT>
   void fill_from(iterT array_iter)
   {
+      long int cur_pos = 0;
       for (std::vector<shared_ptr<ProjData> >::iterator it = _proj_datas.begin();
            it != _proj_datas.end(); ++it)
       {
           if ( is_null_ptr( *(it)))
               error("Dynamic ProjData have not been properly allocated.Abort.");
 
-          array_iter = (*it)->fill_from(array_iter);
+          cur_pos = (*it)->fill_from(array_iter);
+          std::advance(array_iter, cur_pos);
       }
   }
 
   //!
-  //! \brief Returns the total number of elements in the object
+  //! \brief size_all
+  //! \return
   //! \author Nikos Efthimiou
+  //! \details Returns the total size of the object
   std::size_t size_all() const
   {
       std::size_t size = 0;
@@ -195,36 +208,6 @@ protected:
   //N.E:14/07/16 Inherited from ExamData.
 //  shared_ptr<ExamInfo> _exam_info_sptr;
 };
-
-
-//! Copy all bins to a range specified by an iterator
-/*! 
-  \ingroup copy_fill
-  \return \a iter advanced over the range (as std::copy)
-  
-  \warning there is no range-check on \a iter
-*/
-template<>
-struct CopyFill<MultipleProjData>
-{ template < typename iterT>
-    static
-iterT copy_to(const MultipleProjData& stir_object, iterT iter)
-{
-  //std::cerr<<"Using MultipleProjData::copy_to\n";
-  return stir_object.copy_to(iter);
-}
-};
-
-//! set all elements of a MultipleProjData  from an iterator
-/*!  
-   Implementation that resorts to MultipleProjData::fill_from
-   \warning there is no size/range-check on \a iter
-*/
-template < typename iterT>
-void fill_from(MultipleProjData& stir_object, iterT iter, iterT /*iter_end*/)
-{
-  return stir_object.fill_from(iter);
-}
 
 END_NAMESPACE_STIR
 #endif

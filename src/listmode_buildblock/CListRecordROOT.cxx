@@ -3,7 +3,15 @@
     Copyright (C) 2016 UCL
     This file is part of STIR.
 
-    SPDX-License-Identifier: Apache-2.0
+    This file is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
+    (at your option) any later version.
+
+    This file is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
     See STIR/LICENSE.txt for details
 */
@@ -30,7 +38,8 @@ CListEventROOT(const shared_ptr<Scanner>& scanner_sptr) :
 }
 
 //!
-//! \brief fill \c _det_pos from event
+//! \brief CListEventROOT::get_detection_position
+//! \param det_pos
 //! \author Nikos Efthimiou
 //!
 void CListEventROOT::get_detection_position(DetectionPositionPair<>& _det_pos) const

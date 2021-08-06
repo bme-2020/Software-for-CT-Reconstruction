@@ -10,7 +10,6 @@
 */
 /*
     Copyright (C) 2000 PARAPET partners
-    SPDX-License-Identifier: Apache-2.0
     Copyright (C) 2000- 2002, IRSL
     See STIR/LICENSE.txt for details
 */

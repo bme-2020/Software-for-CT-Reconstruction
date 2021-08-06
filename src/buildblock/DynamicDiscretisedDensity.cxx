@@ -14,7 +14,15 @@
     Copyright (C) 2018, University College London
     This file is part of STIR.
 
-    SPDX-License-Identifier: Apache-2.0
+    This file is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
+    (at your option) any later version.
+
+    This file is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
     See STIR/LICENSE.txt for details
 */
@@ -28,9 +36,17 @@
 #include "stir/Succeeded.h"
 #include "stir/is_null_ptr.h"
 #include "stir/round.h"
+#include <fstream>
+#include "stir/IO/interfile.h"
+
+#include "stir/DynamicProjData.h"
+#include "stir/MultipleDataSetHeader.h"
+
 #include <boost/format.hpp>
 
 #ifndef STIR_NO_NAMESPACES
+using std::fstream;
+using std::cerr;
 using std::string;
 #endif
 
@@ -52,7 +68,7 @@ operator=(const DynamicDiscretisedDensity& argument)
     this->_densities[i].reset(argument._densities[i]->clone());
 
   this->_scanner_sptr = argument._scanner_sptr;
-//  this->exam_info_sptr->set_calibration_factor(argument.get_calibration_factor());
+  this->_calibration_factor = argument._calibration_factor;
   this->_isotope_halflife = argument._isotope_halflife;
   this->_is_decay_corrected = argument._is_decay_corrected;
   return *this;
@@ -113,16 +129,12 @@ get_isotope_halflife() const
 const float  
 DynamicDiscretisedDensity::
 get_scanner_default_bin_size() const
-{
-  if (!this->_scanner_sptr)
-    error("DynamicDiscretisedDensity::get_scanner_default_bin_size(): scanner not set");
-  return this->_scanner_sptr->get_default_bin_size();
-}
+{ return this->_scanner_sptr->get_default_bin_size(); }
 
- float  
+const float  
 DynamicDiscretisedDensity::
 get_calibration_factor() const
-{ return this->exam_info_sptr->get_calibration_factor(); }
+{ return this->_calibration_factor; }
 
 const TimeFrameDefinitions & 
 DynamicDiscretisedDensity::
@@ -187,17 +199,13 @@ write_to_ecat7(const string& filename) const
 {
   for (  unsigned int frame_num = 1 ; frame_num<=get_time_frame_definitions().get_num_frames() ;  ++frame_num ) 
     {
-      *(_densities[frame_num-1])*=exam_info_sptr->get_calibration_factor();
+      *(_densities[frame_num-1])*=_calibration_factor;
     }
 }
 
 void  DynamicDiscretisedDensity::
 set_calibration_factor(const float calibration_factor) 
-{ 
-    auto new_exam_info_sptr = std::make_shared<ExamInfo>(this->get_exam_info());
-      new_exam_info_sptr->set_calibration_factor(calibration_factor); 
-      this->set_exam_info(*new_exam_info_sptr);
-}
+{ _calibration_factor=calibration_factor; }
 
 void  DynamicDiscretisedDensity::
 set_if_decay_corrected(const bool is_decay_corrected) 

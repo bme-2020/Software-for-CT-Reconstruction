@@ -12,7 +12,15 @@
     Copyright (C) 2000- 2011, Hammersmith Imanet Ltd
     This file is part of STIR.
 
-    SPDX-License-Identifier: Apache-2.0
+    This file is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
+    (at your option) any later version.
+
+    This file is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
     See STIR/LICENSE.txt for details
 */
@@ -69,38 +77,36 @@ public:
   /*! Checks if all data is equal to 1 (up to a tolerance of 1e-4). To do this, it uses ProjData::get_viewgram()
       and loops over all viewgrams.
   */
-  virtual bool is_trivial() const override;
+  virtual bool is_trivial() const;
 
   //! Checks if we can handle certain projection data.
   /*! Compares the  ProjDataInfo from the ProjData object containing the normalisation factors 
       with the ProjDataInfo supplied. */
-  virtual Succeeded set_up(const shared_ptr<const ExamInfo>& exam_info_sptr, const shared_ptr<const ProjDataInfo>& ) override;
+  virtual Succeeded set_up(const shared_ptr<const ProjDataInfo>&);
 
   //! Normalise some data
   /*! 
     This means \c multiply with the data in the projdata object 
     passed in the constructor. 
   */
-  
-  virtual void apply(RelatedViewgrams<float>& viewgrams) const override;
+  virtual void apply(RelatedViewgrams<float>& viewgrams,const double start_time, const double end_time) const;
 
   //! Undo the normalisation of some data
   /*! 
     This means \c divide with the data in the projdata object 
     passed in the constructor. 
   */
+  virtual void undo(RelatedViewgrams<float>& viewgrams,const double start_time, const double end_time) const;
 
-  virtual void undo(RelatedViewgrams<float>& viewgrams) const override;
-  virtual float get_bin_efficiency(const Bin& bin) const override;
-  
+  virtual float get_bin_efficiency(const Bin& bin,const double start_time, const double end_time) const;
     //! Get a shared_ptr to the normalisation proj_data.
   virtual shared_ptr<ProjData> get_norm_proj_data_sptr() const;
  
 private:
   shared_ptr<ProjData> norm_proj_data_ptr;
-  virtual void set_defaults() override;
-  virtual void initialise_keymap() override;
-  virtual bool post_processing() override;
+  virtual void set_defaults();
+  virtual void initialise_keymap();
+  virtual bool post_processing();
 
   std::string normalisation_projdata_filename;
 };

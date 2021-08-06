@@ -1,6 +1,3 @@
 # Output files
 my_*
 *.log
-test_modelling_output
-# scatter output
-extras/
