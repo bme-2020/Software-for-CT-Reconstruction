@@ -2,19 +2,11 @@
     Copyright (C) 2000 PARAPET partners
     Copyright (C) 2000-2005, Hammersmith Imanet Ltd
     Copyright (C) 2013, Kris Thielemans
-    Copyright (C) 2013, University College London
+    Copyright (C) 2013, 2020 University College London
     Copyright (C) 2018, University of Hull
     This file is part of STIR.
 
-    This file is free software; you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published by
-    the Free Software Foundation; either version 2.1 of the License, or
-    (at your option) any later version.
-
-    This file is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Lesser General Public License for more details.
+    SPDX-License-Identifier: Apache-2.0 AND License-ref-PARAPET-license
 
     See STIR/LICENSE.txt for details
 */
@@ -260,6 +252,9 @@ public:
   }
   //@}
 
+  //! check if a<b
+  template <class T1, class T2>
+    inline bool check_if_less(T1 a, T2 b, const std::string& str = "");
 
 protected:
   //! tolerance for comparisons with real values
@@ -433,4 +428,19 @@ RunTests::check_if_zero(const double a, const std::string& str )
     return true;
 }
 
+
+template <class T1, class T2>
+bool
+  RunTests::check_if_less(T1 a, T2 b, const std::string& str)
+{
+  if (a>=b)
+    {
+      std::cerr << "Error : " << a << " is larger than " << b << ", " << str<< std::endl;
+      everything_ok = false;
+      return false;
+    }
+  else
+    return true;
+}
+      
 END_NAMESPACE_STIR

@@ -1,20 +1,12 @@
 # This file is part of STIR.
 #
-# This file is free software; you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation; either version 2.1 of the License, or
-# (at your option) any later version.
-#
-# This file is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Lesser General Public License for more details.
+# SPDX-License-Identifier: Apache-2.0
 #
 # See STIR/LICENSE.txt for details
 
 # cmake file for building STIR. See the STIR User's Guide and http://www.cmake.org.
-cmake_minimum_required(VERSION 2.8.3)
-# require 2.8.3 to get FOLDER properties support (without that, we only need cmake 2.6)
+cmake_minimum_required(VERSION 3.1.0)
+
 
 # avoid warning about WIN32 no longer defined in CYGWIN
 set(CMAKE_LEGACY_CYGWIN_WIN32 0) 
@@ -30,8 +22,6 @@ PROJECT(STIR)
 
 SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON)
 
-# require 2.8.3 to get FOLDER properties support (without that, we only need cmake 2.6)
-cmake_minimum_required(VERSION 2.8.3)
 if (POLICY CMP0025)
   cmake_policy(SET CMP0025 NEW) # Compiler Id for Apple Clang is AppleClang, see STIR issue #531
 endif()
@@ -47,34 +37,39 @@ if(NOT CMAKE_BUILD_TYPE)
    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "type of build: Debug Release RelWithDebInfo MinSizeRel." FORCE)
 endif()
 
-if((${CMAKE_CXX_COMPILER_ID} MATCHES "AppleClang") OR
-   (APPLE AND ${CMAKE_SYSTEM_NAME} MATCHES "Darwin" AND
-    ${CMAKE_CXX_COMPILER_ID} MATCHES "Clang"))
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
-  # Ignore undefined template var warning
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-undefined-var-template")
+if (CMAKE_CXX_COMPILER_ID)
+   if((${CMAKE_CXX_COMPILER_ID} MATCHES "AppleClang") OR (${CMAKE_CXX_COMPILER_ID} MATCHES "Clang"))
+      # Ignore undefined template var warning (see https://github.com/UCL/STIR/issues/126)
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-undefined-var-template")
+      if (APPLE)
+          set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+      endif()
+   endif()
+else()
+   message(WARNING "CMAKE_CXX_COMPILER_ID is not set. We are therefore not able to set some options.")
 endif()
 
 ####### Set Version number etc
-set(VERSION_MAJOR   4)
+set(VERSION_MAJOR   5)
 set(VERSION_MINOR   0)
-set(VERSION_PATCH   2)
-set(VERSION   040002) # only used in STIRConfig.h.in
+set(VERSION_PATCH   0-prealpha)
+set(VERSION   050000) # only used in STIRConfig.h.in
 
 set(STIR_VERSION
   ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH})
 
 ####### Installation directories
-# Use locations as in
+# Use BeOS locations as in
 # https://gitlab.kitware.com/cmake/cmake/blob/master/Source/CMakeInstallDestinations.cmake
-# TODO append version numbers
+# However, use CYGWIN location also elsewhere (as that's what's used in Ubuntu (and others?))
 if(BEOS)
-  set(STIR_DOC_DIR "documentation/doc/stir")
-elseif(CYGWIN)
-  set(STIR_DOC_DIR "share/doc/stir")
-else()
-  set(STIR_DOC_DIR "doc/stir")
+  set(STIR_DOC_DIR "documentation/doc/stir-${VERSION_MAJOR}.${VERSION_MINOR}")
+else() #if(CYGWIN)
+  set(STIR_DOC_DIR "share/doc/stir-${VERSION_MAJOR}.${VERSION_MINOR}")
+#else()
+#  set(STIR_DOC_DIR "doc/stir-${VERSION_MAJOR}.${VERSION_MINOR}")
 endif()
+# TODO append version numbers
 set(STIR_DATA_DIR "share/stir")
 set(ConfigPackageLocation lib/cmake/)
 
@@ -92,15 +87,17 @@ option(DISABLE_LLN_MATRIX "disable use of LLN library" OFF)
 option(DISABLE_ITK "disable use of ITK library" OFF)
 option(DISABLE_AVW "disable use of AVW library" OFF)
 option(DISABLE_RDF "disable use of GE RDF library" OFF)
+option(DISABLE_HDF5 "disable use of HDF5 libraries" OFF)
 option(DISABLE_STIR_LOCAL "disable use of LOCAL extensions to STIR" OFF)
 option(DISABLE_CERN_ROOT "disable use of Cern ROOT libraries" OFF)
 option(DISABLE_NLOHMANN_JSON "disable use of nlohmann JSON libraries" OFF)
 option(STIR_ENABLE_EXPERIMENTAL "disable use of STIR experimental code" OFF) # disable by default
 option(DISABLE_NiftyPET_PROJECTOR "disable use of NiftyPET projector" OFF)
+option(DISABLE_Parallelproj_PROJECTOR "disable use of Parallelproj projector" OFF)
 
 if(NOT DISABLE_ITK)
    # See if we can find a compiled version of ITK (http://www.itk.org/)
-   find_package(ITK QUIET)
+   find_package(ITK 4.9 QUIET)
    if (ITK_FOUND)
       include(${ITK_USE_FILE})
    endif()
@@ -114,13 +111,6 @@ if(NOT DISABLE_CERN_ROOT)
   find_package(CERN_ROOT)
   if (CERN_ROOT_FOUND)
     message(STATUS "ROOT Version: ${CERN_ROOT_VERSION}")
-    # Find which major version this is
-    string(REPLACE "." ";" _VERSION_LIST ${CERN_ROOT_VERSION})
-    list(GET _VERSION_LIST 0 CERN_ROOT_VERSION_MAJOR)
-    if (${CERN_ROOT_VERSION_MAJOR} GREATER 5)
-      message(STATUS "This ROOT version needs C++-11, so we will enable this.")
-      UseCXX(11)
-    endif()
   endif()
 endif()
 
@@ -132,21 +122,34 @@ if(NOT DISABLE_RDF)
   find_package(RDF)
 endif()
 
+if(NOT DISABLE_HDF5)
+  find_package(HDF5 COMPONENTS CXX)
+  if (HDF5_FOUND)
+    message(WARNING "STIR HDF5 code needs C++-11, so we will enable this.")
+    UseCXX(11)
+  endif()
+endif()
+
 if(NOT DISABLE_NLOHMANN_JSON)
-    find_package(nlohmann_json 3.2.0 QUIET)
+    find_package(nlohmann_json 3.2.0)# QUIET)
     if (nlohmann_json_FOUND)
-        message(STATUS "nlohmann JSON library found.")
-        message(STATUS "The nlohmann JSON library needs C++-11, so we will enable this.")
-        UseCXX(11)
+      message(STATUS "nlohmann JSON library found.")
+      set(HAVE_JSON ON)
+    else()
+      message(STATUS "nlohmann JSON library not found. Try and set nlohmann_json_DIR if you have it.")
     endif()
 endif()
 
-# Enable version 3 projectors
+# Legacy options
 option(STIR_PROJECTORS_AS_V3 "Enable STIR version 3 legacy code" OFF)
+option(STIR_LEGACY_IGNORE_VIEW_OFFSET "Ignore using scanner view-offset (or intrinsic azimuthal tilt), as in STIR 4 or earlier" OFF)
 
 # NiftyPET projector
-if(NOT DISABLE_NiftyPET_PROJECTOR)
+if(NOT DISABLE_NiftyPET_PROJECTOR OR NOT DISABLE_Parallelproj_PROJECTOR)
   find_package(CUDAToolkit QUIET)
+endif()
+
+if(NOT DISABLE_NiftyPET_PROJECTOR)
   if (CUDAToolkit_FOUND)
     find_package(NiftyPET)
     if (NiftyPET_FOUND)
@@ -158,6 +161,24 @@ if (STIR_WITH_NiftyPET_PROJECTOR)
   message(STATUS "NiftyPET projector support enabled.")
 else()
   message(STATUS "NiftyPET projector support disabled.")
+endif()
+
+# Parallelproj
+if(NOT DISABLE_Parallelproj_PROJECTOR)
+    find_package(parallelproj)
+    if (parallelproj_FOUND)
+      set(STIR_WITH_Parallelproj_PROJECTOR ON)
+      if (parallelproj_built_with_CUDA)
+        message(STATUS "Found parallelproj (will use its CUDA support)")
+      else()
+        message(STATUS "Found parallelproj (but using its OpenMP version as it wasn't built with CUDA)")
+      endif()
+    endif()
+endif()
+if (STIR_WITH_Parallelproj_PROJECTOR)
+  message(STATUS "Parallelproj projector support enabled.")
+else()
+  message(STATUS "Parallelproj projector support disabled or not available.")
 endif()
 
 #### enable support for ctest
@@ -235,5 +256,35 @@ install(
     FILES_MATCHING PATTERN "Find*"
 )
 
+# install examples
+install(
+  DIRECTORY
+    examples
+  COMPONENT DOC
+  DESTINATION "${STIR_DOC_DIR}"
+   FILES_MATCHING
+    PATTERN *
+    PATTERN my_* EXCLUDE
+    PATTERN *~  EXCLUDE
+    PATTERN *.bak EXCLUDE
+    PATTERN  *.log EXCLUDE
+)
+
+# install documentation
+install(
+  DIRECTORY
+    documentation
+  COMPONENT DOC
+    DESTINATION "${STIR_DOC_DIR}"
+  FILES_MATCHING
+    PATTERN *
+    PATTERN *.aux EXCLUDE
+    PATTERN *.dvi EXCLUDE
+    PATTERN *.out EXCLUDE
+    PATTERN *.toc EXCLUDE
+    PATTERN *~  EXCLUDE
+    PATTERN *.bak EXCLUDE
+    PATTERN  *.log EXCLUDE
+)
 #  COMPONENT
 #    Devel

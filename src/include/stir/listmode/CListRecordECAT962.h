@@ -4,15 +4,7 @@
     Copyright (C) 2003- 2011, Hammersmith Imanet Ltd
     This file is part of STIR.
 
-    This file is free software; you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published by
-    the Free Software Foundation; either version 2.1 of the License, or
-    (at your option) any later version.
-
-    This file is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Lesser General Public License for more details.
+    SPDX-License-Identifier: Apache-2.0
 
     See STIR/LICENSE.txt for details
 */
@@ -29,6 +21,8 @@
 #define __stir_listmode_CListRecordECAT962_H__
 
 #include "stir/listmode/CListRecord.h"
+#include "stir/listmode/ListGatingInput.h"
+#include "stir/listmode/ListTime.h"
 #include "stir/listmode/CListEventCylindricalScannerWithViewTangRingRingEncoding.h"
 #include "stir/ProjDataInfoCylindrical.h"
 #include "stir/ProjDataInfoCylindricalNoArcCorr.h"
@@ -184,7 +178,7 @@ private:
 //! A class for a general element of a listmode file
 /*! \ingroup listmode
    For the 962 it's either a coincidence event, or a timing flag.*/
-class CListRecordECAT962 : public CListRecordWithGatingInput, public ListTime, public CListGatingInput,
+class CListRecordECAT962 : public CListRecordWithGatingInput, public ListTime, public ListGatingInput,
     public  CListEventCylindricalScannerWithViewTangRingRingEncoding<CListRecordECAT962>
 {
  public:
@@ -210,9 +204,9 @@ class CListRecordECAT962 : public CListRecordWithGatingInput, public ListTime, p
     { return *this; }
   virtual const ListTime&   time() const
     { return *this; }
-  virtual CListGatingInput&  gating_input()
+  virtual ListGatingInput&  gating_input()
     { return *this; }
-  virtual const CListGatingInput&  gating_input() const
+  virtual const ListGatingInput&  gating_input() const
   { return *this; }
 
   bool operator==(const CListRecord& e2) const

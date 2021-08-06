@@ -31,6 +31,7 @@
 #include "stir/recon_buildblock/QuadraticPrior.h"
 #include "stir/recon_buildblock/PLSPrior.h"
 #include "stir/recon_buildblock/RelativeDifferencePrior.h"
+#include "stir/recon_buildblock/LogcoshPrior.h"
 
 #include "stir/recon_buildblock/ProjMatrixByBinUsingRayTracing.h"
 #include "stir/recon_buildblock/ProjMatrixByBinUsingInterpolation.h"
@@ -71,12 +72,22 @@
 #endif
 #include "stir/recon_buildblock/BinNormalisationFromECAT8.h"
 
+#ifdef HAVE_HDF5
+#include "stir/recon_buildblock/BinNormalisationFromGEHDF5.h"
+#endif
+
 #include "stir/recon_buildblock/FourierRebinning.h"
 
 #ifdef STIR_WITH_NiftyPET_PROJECTOR
 #include "stir/recon_buildblock/NiftyPET_projector/ForwardProjectorByBinNiftyPET.h"
 #include "stir/recon_buildblock/NiftyPET_projector/BackProjectorByBinNiftyPET.h"
 #include "stir/recon_buildblock/NiftyPET_projector/ProjectorByBinPairUsingNiftyPET.h"
+#endif
+
+#ifdef STIR_WITH_Parallelproj_PROJECTOR
+#include "stir/recon_buildblock/Parallelproj_projector/ForwardProjectorByBinParallelproj.h"
+#include "stir/recon_buildblock/Parallelproj_projector/BackProjectorByBinParallelproj.h"
+#include "stir/recon_buildblock/Parallelproj_projector/ProjectorByBinPairUsingParallelproj.h"
 #endif
 
 //#include "stir/IO/InputFileFormatRegistry.h"
@@ -91,6 +102,7 @@ static FilterRootPrior<DiscretisedDensity<3,float> >::RegisterIt dummy4;
 static QuadraticPrior<float>::RegisterIt dummy5;
 static PLSPrior<float>::RegisterIt dummyPLS;
 static RelativeDifferencePrior<float>::RegisterIt dummyRelativeDifference;
+static LogcoshPrior<float>::RegisterIt dummyLogcosh;
 
 static ProjMatrixByBinUsingRayTracing::RegisterIt dummy11;
 static ProjMatrixByBinUsingInterpolation::RegisterIt dummy12;
@@ -129,6 +141,12 @@ static BackProjectorByBinNiftyPET::RegisterIt gpu_bck;
 static ProjectorByBinPairUsingNiftyPET::RegisterIt gpu_pair;
 #endif
 
+#ifdef STIR_WITH_Parallelproj_PROJECTOR
+static ForwardProjectorByBinParallelproj::RegisterIt parallelproj_fwd;
+static BackProjectorByBinParallelproj::RegisterIt parallelproj_bck;
+static ProjectorByBinPairUsingParallelproj::RegisterIt parallelproj_pair;
+#endif
+
 #ifdef HAVE_LLN_MATRIX
 START_NAMESPACE_ECAT
 START_NAMESPACE_ECAT7
@@ -140,6 +158,10 @@ END_NAMESPACE_ECAT
 START_NAMESPACE_ECAT
 static BinNormalisationFromECAT8::RegisterIt dummy103;
 END_NAMESPACE_ECAT
+
+#ifdef HAVE_HDF5
+static GE::RDF_HDF5::BinNormalisationFromGEHDF5::RegisterIt dummy104;
+#endif
 
 static FourierRebinning::RegisterIt dummyFORE;
 

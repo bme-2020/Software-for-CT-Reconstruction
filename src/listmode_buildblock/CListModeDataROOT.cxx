@@ -1,18 +1,10 @@
 /*
     Copyright (C) 2015, 2016 University of Leeds
-    Copyright (C) 2016, 2017 University College London
+    Copyright (C) 2016, 2017, 2020 University College London
     Copyright (C) 2018 University of Hull
     This file is part of STIR.
 
-    This file is free software; you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published by
-    the Free Software Foundation; either version 2.1 of the License, or
-    (at your option) any later version.
-
-    This file is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Lesser General Public License for more details.
+    SPDX-License-Identifier: Apache-2.0
 
     See STIR/LICENSE.txt for details
 */
@@ -24,6 +16,7 @@
   \author Nikos Efthimiou
   \author Harry Tsoumpas
   \author Kris Thielemans
+  \author Robbie Twyman
 */
 
 #include "stir/listmode/CListModeDataROOT.h"
@@ -43,6 +36,8 @@ CListModeDataROOT(const std::string& hroot_filename)
 {
     set_defaults();
     std::string error_str;
+    int num_virtual_axial_crystals_per_block = -1; // -1 means: use scanner default
+    int num_virtual_transaxial_crystals_per_block = -1; // -1 means: use scanner default
 
     this->parser.add_start_key("ROOT header");
     this->parser.add_stop_key("End ROOT header");
@@ -56,7 +51,11 @@ CListModeDataROOT(const std::string& hroot_filename)
     this->parser.add_key("Average depth of interaction (cm)", &this->average_depth_of_interaction);
     this->parser.add_key("Distance between rings (cm)", &this->ring_spacing);
     this->parser.add_key("Default bin size (cm)", &this->bin_size);
+    this->parser.add_key("View offset (degrees)", &this->view_offset);
     this->parser.add_key("Maximum number of non-arc-corrected bins", &this->max_num_non_arccorrected_bins);
+    this->parser.add_key("Default number of arc-corrected bins", &this->default_num_arccorrected_bins);
+    this->parser.add_key("Number of virtual axial crystals per block", &num_virtual_axial_crystals_per_block);
+    this->parser.add_key("Number of virtual transaxial crystals per block", &num_virtual_transaxial_crystals_per_block);
     // end Scanner and physical dimensions.
 
     // ROOT related
@@ -107,6 +106,10 @@ CListModeDataROOT(const std::string& hroot_filename)
         {
             error(error_str.c_str());
         }
+        if (default_num_arccorrected_bins == -1)
+        {
+            default_num_arccorrected_bins = max_num_non_arccorrected_bins;
+        }
 
         this_scanner_sptr.reset(new Scanner(Scanner::User_defined_scanner,
                                              std::string ("ROOT_defined_scanner"),
@@ -117,14 +120,15 @@ CListModeDataROOT(const std::string& hroot_filename)
                                              /* number of non arccor bins */
                                              this->max_num_non_arccorrected_bins,
                                              /* number of maximum arccor bins */
-                                             this->max_num_non_arccorrected_bins,
+                                             this->default_num_arccorrected_bins,
                                              /* inner ring radius */
                                              this->inner_ring_diameter/0.2f,
                                              /* doi */ this->average_depth_of_interaction * 10.f,
                                              /* ring spacing */
                                              this->ring_spacing * 10.f,
                                              this->bin_size * 10.f,
-                                             /* offset*/ 0,
+                                             /* offset*/ 
+                                             this->view_offset * _PI /180,
                                              /*num_axial_blocks_per_bucket_v */
                                              this->root_file_sptr->get_num_axial_blocks_per_bucket_v(),
                                              /*num_transaxial_blocks_per_bucket_v*/
@@ -139,6 +143,14 @@ CListModeDataROOT(const std::string& hroot_filename)
                                              this->root_file_sptr->get_num_trans_crystals_per_singles_unit(),
                                              /*num_detector_layers_v*/ 1 ));
     }
+    // have to do this here currently as these variables cannot be set via the constructor
+    if (num_virtual_axial_crystals_per_block>=0)
+      this_scanner_sptr->set_num_virtual_axial_crystals_per_block(num_virtual_axial_crystals_per_block);
+    if (num_virtual_transaxial_crystals_per_block>=0)
+      this_scanner_sptr->set_num_virtual_transaxial_crystals_per_block(num_virtual_transaxial_crystals_per_block);
+    // put virtual block info in root_file_sptr
+    this->root_file_sptr->set_num_virtual_axial_crystals_per_block(this_scanner_sptr->get_num_virtual_axial_crystals_per_block());
+    this->root_file_sptr->set_num_virtual_transaxial_crystals_per_block(this_scanner_sptr->get_num_virtual_transaxial_crystals_per_block());
 
     // Compare with InputStreamFromROOTFile scanner generated geometry and throw error if wrong.
     if (check_scanner_match_geometry(error_str, this_scanner_sptr) == Succeeded::no)
@@ -226,10 +238,12 @@ set_defaults()
     num_rings = -1;
     num_detectors_per_ring = -1;
     max_num_non_arccorrected_bins = -1;
+    default_num_arccorrected_bins = -1;
     inner_ring_diameter = -1.f;
     average_depth_of_interaction = -1.f;
     ring_spacing = -.1f;
     bin_size = -1.f;
+    view_offset = 0.f;
 }
 
 Succeeded

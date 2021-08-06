@@ -3,15 +3,7 @@
   Copyright (C) 2010- 2013, King's College London
   Copyright (C) 2018, University College London
 
-  This file is free software; you can redistribute it and/or modify
-  it under the terms of the GNU Lesser General Public License as published by
-  the Free Software Foundation; either version 2.1 of the License, or
-  (at your option) any later version.
-  
-  This file is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU Lesser General Public License for more details.
+  SPDX-License-Identifier: Apache-2.0
   
   See STIR/LICENSE.txt for details
 */
@@ -106,7 +98,12 @@ public  RegisteredParsingObject<PoissonLogLikelihoodWithLinearModelForMeanAndGat
     actual_add_multiplication_with_approximate_sub_Hessian_without_penalty(TargetT& output,
                                                                            const TargetT& input,
                                                                            const int subset_num) const;
-	
+  virtual Succeeded
+    actual_accumulate_sub_Hessian_times_input_without_penalty(TargetT &output,
+            const TargetT &current_image_estimate,
+            const TargetT &input,
+            const int subset_num) const;
+
   void set_time_gate_definitions(const TimeGateDefinitions & time_gate_definitions); 
 
   /*! \name Functions to get parameters

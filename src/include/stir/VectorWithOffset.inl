@@ -6,15 +6,7 @@
     Copyright (C) 2012-06-01 - 2012, Kris Thielemans
     This file is part of STIR.
 
-    This file is free software; you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published by
-    the Free Software Foundation; either version 2.1 of the License, or
-    (at your option) any later version.
-
-    This file is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Lesser General Public License for more details.
+    SPDX-License-Identifier: Apache-2.0 AND License-ref-PARAPET-license
 
     See STIR/LICENSE.txt for details
 */
@@ -31,6 +23,7 @@
 
 #include <algorithm>
 #include <stdexcept>
+#include "thresholding.h"
 
 START_NAMESPACE_STIR
 
@@ -70,8 +63,6 @@ VectorWithOffset<T>::check_state() const
   assert(begin_allocated_memory <= num+start);
   assert(end_allocated_memory>=begin_allocated_memory);
   assert(static_cast<unsigned>(end_allocated_memory-begin_allocated_memory) >= length);
-  // check if data is being accessed via a pointer (see get_data_ptr())
-  assert(pointer_access == false);
 }
 
 template <class T>
@@ -79,6 +70,8 @@ void
 VectorWithOffset<T>::
 _destruct_and_deallocate() 
 {
+  // check if data is being accessed via a pointer (see get_data_ptr())
+  assert(pointer_access == false);
   // TODO when reserve() no longer initialises new elements,
   // we'll have to be careful to delete only initialised elements
   // and just de-allocate the rest
@@ -306,6 +299,8 @@ VectorWithOffset(const int min_index, const int max_index,
 template <class T>
 VectorWithOffset<T>::~VectorWithOffset()
 { 
+  // check if data is being accessed via a pointer (see get_data_ptr())
+  assert(pointer_access == false);
   _destruct_and_deallocate();
 }		
 
@@ -379,6 +374,9 @@ reserve(const int new_capacity_min_index, const int new_capacity_max_index)
     static_cast<unsigned>(actual_capacity_max_index - actual_capacity_min_index) + 1;
   if (new_capacity <= this->capacity())
     return;
+
+  // check if data is being accessed via a pointer (see get_data_ptr())
+  assert(pointer_access == false);
   // TODO use allocator here instead of new
   T *newmem = new T[new_capacity];
   const unsigned extra_at_the_left =
@@ -561,6 +559,25 @@ VectorWithOffset<T>::fill(const T &n)
   //std::fill(begin(), end(), n);
   for(int i=this->get_min_index(); i<=this->get_max_index(); i++)
     num[i] = n;
+  this->check_state();
+}
+
+
+template <class T>
+inline void
+VectorWithOffset<T>::apply_lower_threshold(const T &lower)
+{
+  this->check_state();
+  threshold_lower(this->begin(), this->end(), lower);
+  this->check_state();
+}
+
+template <class T>
+inline void
+VectorWithOffset<T>::apply_upper_threshold(const T &upper)
+{
+  this->check_state();
+  threshold_upper(this->begin(), this->end(), upper);
   this->check_state();
 }
 
